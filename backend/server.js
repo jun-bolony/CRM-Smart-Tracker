@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI || 'https://crm-smart-tracker-zeta.vercel.app/')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
