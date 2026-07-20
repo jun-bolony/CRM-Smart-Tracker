@@ -13,11 +13,21 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1); // terminate the process so that Render restarts
+  });
 
 app.get('/', (req, res) => {
   res.send('CRM Smart Tracker API is running 🚀');
 });
+
+const applicationsRouter = require('./routes/applications');
+app.use('/api/applications', applicationsRouter);
+
+// ---- Global error handler (must be after all routes) ----
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
