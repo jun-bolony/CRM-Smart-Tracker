@@ -1,6 +1,6 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip, Box } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, Chip } from '@mui/material';
 import { Edit, Delete, Visibility } from '@mui/icons-material';
-import { Application, ApplicationStatus } from '../types/Application';
+import type { Application, ApplicationStatus } from '../types/Application';
 import { useNavigate } from 'react-router-dom';
 
 interface Props {
@@ -24,7 +24,7 @@ export const ApplicationTable = ({ applications, onDeleteClick }: Props) => {
   const formatDate = (date?: string | Date) => {
     if (!date) return '-';
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   return (
@@ -35,7 +35,7 @@ export const ApplicationTable = ({ applications, onDeleteClick }: Props) => {
             <TableCell>Company</TableCell>
             <TableCell>Position</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell>Applied</TableCell>
+            <TableCell>Applied Date</TableCell>
             <TableCell>Salary</TableCell>
             <TableCell align="right">Actions</TableCell>
           </TableRow>
@@ -69,7 +69,7 @@ export const ApplicationTable = ({ applications, onDeleteClick }: Props) => {
           ))}
           {applications.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} align="center">No applications yet. Create your first one!</TableCell>
+              <TableCell colSpan={6} align="center">No applications. Create the first one!</TableCell>
             </TableRow>
           )}
         </TableBody>

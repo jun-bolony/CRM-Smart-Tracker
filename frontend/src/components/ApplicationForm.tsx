@@ -8,12 +8,9 @@ import {
   Button,
   Box,
   Grid,
-  Chip,
-  OutlinedInput,
-  Stack,
   FormHelperText,
 } from '@mui/material';
-import { Application, ApplicationStatus } from '../types/Application';
+import type { Application, ApplicationStatus } from '../types/Application';
 
 interface Props {
   initialData?: Partial<Application>;
@@ -119,7 +116,7 @@ export const ApplicationForm = ({ initialData, onSubmit, loading, error }: Props
         <Grid item xs={12}>
           <TextField
             fullWidth
-            label="Job URL"
+            label="Vacancy URL"
             name="url"
             value={formData.url}
             onChange={handleChange}
@@ -155,7 +152,7 @@ export const ApplicationForm = ({ initialData, onSubmit, loading, error }: Props
         <Grid item xs={12} sm={3}>
           <TextField
             fullWidth
-            label="Min Salary"
+            label="Salary Min"
             name="salaryMin"
             type="number"
             value={formData.salaryMin}
@@ -165,7 +162,7 @@ export const ApplicationForm = ({ initialData, onSubmit, loading, error }: Props
         <Grid item xs={12} sm={3}>
           <TextField
             fullWidth
-            label="Max Salary"
+            label="Salary Max"
             name="salaryMax"
             type="number"
             value={formData.salaryMax}
@@ -199,7 +196,7 @@ export const ApplicationForm = ({ initialData, onSubmit, loading, error }: Props
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
-            label="Application Date"
+            label="Applied Date"
             name="appliedDate"
             type="date"
             value={formData.appliedDate}

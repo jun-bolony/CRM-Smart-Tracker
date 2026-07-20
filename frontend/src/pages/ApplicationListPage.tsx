@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Button, Typography, Box } from '@mui/material';
 import { Add } from '@mui/icons-material';
-import { Application } from '../types/Application';
+import type { Application } from '../types/Application';
 import { applicationApi } from '../services/api';
 import { ApplicationTable } from '../components/ApplicationTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -54,7 +54,7 @@ export const ApplicationListPage = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">My Applications</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={() => navigate('/new')}>
           Add

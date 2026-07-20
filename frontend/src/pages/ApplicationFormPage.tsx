@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Typography, Box, Paper } from '@mui/material';
-import { Application } from '../types/Application';
+import { Container, Typography, Paper } from '@mui/material';
+import type { Application } from '../types/Application';
 import { applicationApi } from '../services/api';
 import { ApplicationForm } from '../components/ApplicationForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';

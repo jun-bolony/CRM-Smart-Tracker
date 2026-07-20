@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Application, ApiResponse, ApplicationQueryParams } from '../types/Application';
+import type { Application, ApiResponse, ApplicationQueryParams } from '../types/Application';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -8,7 +8,6 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -18,40 +17,35 @@ api.interceptors.response.use(
 );
 
 export const applicationApi = {
-  // Get all applications (filters can be added later)
   getAll: async (params?: ApplicationQueryParams): Promise<Application[]> => {
     const response = await api.get<ApiResponse<Application[]>>('/api/applications', { params });
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch applications');
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch');
     return response.data.data || [];
   },
 
-  // Get a single application by ID
   getOne: async (id: string): Promise<Application> => {
     const response = await api.get<ApiResponse<Application>>(`/api/applications/${id}`);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch application');
-    if (!response.data.data) throw new Error('No data received');
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch');
+    if (!response.data.data) throw new Error('No data');
     return response.data.data;
   },
 
-  // Create a new application
   create: async (data: Omit<Application, '_id' | 'createdAt' | 'updatedAt'>): Promise<Application> => {
     const response = await api.post<ApiResponse<Application>>('/api/applications', data);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to create application');
-    if (!response.data.data) throw new Error('No data received');
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to create');
+    if (!response.data.data) throw new Error('No data');
     return response.data.data;
   },
 
-  // Update an existing application
   update: async (id: string, data: Partial<Application>): Promise<Application> => {
     const response = await api.put<ApiResponse<Application>>(`/api/applications/${id}`, data);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to update application');
-    if (!response.data.data) throw new Error('No data received');
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to update');
+    if (!response.data.data) throw new Error('No data');
     return response.data.data;
   },
 
-  // Delete an application
   delete: async (id: string): Promise<void> => {
     const response = await api.delete<ApiResponse>(`/api/applications/${id}`);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to delete application');
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to delete');
   },
 };
