@@ -1,238 +1,287 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
+  Box,
   TextField,
+  Button,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
-  Button,
-  Box,
-  Grid,
+  Paper,
+  Typography,
   FormHelperText,
 } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types/Application';
 
-interface Props {
+const statusOptions: ApplicationStatus[] = [
+  'Sent',
+  'Viewed',
+  'Interview',
+  'Test',
+  'Offer',
+  'Rejected',
+  'Archived',
+];
+
+interface ApplicationFormProps {
   initialData?: Partial<Application>;
-  onSubmit: (data: any) => Promise<void>;
-  loading: boolean;
-  error?: string;
+  onSubmit: (data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>) => void;
+  onCancel: () => void;
+  isEdit?: boolean;
 }
 
-const STATUSES: ApplicationStatus[] = ['Sent', 'Viewed', 'Interview', 'Test', 'Offer', 'Rejected', 'Archived'];
-
-export const ApplicationForm = ({ initialData, onSubmit, loading, error }: Props) => {
-  const [formData, setFormData] = useState({
+export const ApplicationForm = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  isEdit = false,
+}: ApplicationFormProps) => {
+  const [formData, setFormData] = useState<Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>>({
     company: '',
     position: '',
     url: '',
-    contactName: '',
-    contactEmail: '',
-    contactPhone: '',
-    salaryMin: '',
-    salaryMax: '',
+    contact: { name: '', email: '', phone: '' },
+    salaryMin: undefined,
+    salaryMax: undefined,
     source: '',
-    status: 'Sent' as ApplicationStatus,
+    status: 'Sent',
     appliedDate: new Date().toISOString().split('T')[0],
     nextEventDate: '',
-    notes: '',
+    notes: [],
   });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (initialData) {
+      const applied = initialData.appliedDate
+        ? new Date(initialData.appliedDate).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
+      const nextEvent = initialData.nextEventDate
+        ? new Date(initialData.nextEventDate).toISOString().split('T')[0]
+        : '';
       setFormData({
         company: initialData.company || '',
         position: initialData.position || '',
         url: initialData.url || '',
-        contactName: initialData.contact?.name || '',
-        contactEmail: initialData.contact?.email || '',
-        contactPhone: initialData.contact?.phone || '',
-        salaryMin: initialData.salaryMin?.toString() || '',
-        salaryMax: initialData.salaryMax?.toString() || '',
+        contact: {
+          name: initialData.contact?.name || '',
+          email: initialData.contact?.email || '',
+          phone: initialData.contact?.phone || '',
+        },
+        salaryMin: initialData.salaryMin,
+        salaryMax: initialData.salaryMax,
         source: initialData.source || '',
         status: initialData.status || 'Sent',
-        appliedDate: initialData.appliedDate ? new Date(initialData.appliedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        nextEventDate: initialData.nextEventDate ? new Date(initialData.nextEventDate).toISOString().split('T')[0] : '',
-        notes: initialData.notes?.join('\n') || '',
+        appliedDate: applied,
+        nextEventDate: nextEvent,
+        notes: initialData.notes || [],
       });
     }
   }, [initialData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (field: keyof typeof formData, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
-  const handleSelectChange = (e: any) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleContactChange = (field: keyof NonNullable<Application['contact']>, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      contact: {
+        ...prev.contact,
+        [field]: value,
+      },
+    }));
+  };
+
+  const validate = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.company.trim()) newErrors.company = 'Company is required';
+    if (!formData.position.trim()) newErrors.position = 'Position is required';
+    if (!formData.status) newErrors.status = 'Status is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      company: formData.company,
-      position: formData.position,
-      url: formData.url || undefined,
-      contact: {
-        name: formData.contactName || undefined,
-        email: formData.contactEmail || undefined,
-        phone: formData.contactPhone || undefined,
-      },
-      salaryMin: formData.salaryMin ? Number(formData.salaryMin) : undefined,
-      salaryMax: formData.salaryMax ? Number(formData.salaryMax) : undefined,
-      source: formData.source || undefined,
-      status: formData.status,
-      appliedDate: formData.appliedDate ? new Date(formData.appliedDate).toISOString() : new Date().toISOString(),
-      nextEventDate: formData.nextEventDate ? new Date(formData.nextEventDate).toISOString() : undefined,
-      notes: formData.notes ? formData.notes.split('\n').filter(s => s.trim()) : [],
-    };
-    onSubmit(payload);
+    if (validate()) {
+      const dataToSend = {
+        ...formData,
+        appliedDate: new Date(formData.appliedDate).toISOString(),
+        nextEventDate: formData.nextEventDate ? new Date(formData.nextEventDate).toISOString() : undefined,
+        contact: {
+          name: formData.contact?.name || undefined,
+          email: formData.contact?.email || undefined,
+          phone: formData.contact?.phone || undefined,
+        },
+        url: formData.url || undefined,
+        source: formData.source || undefined,
+        salaryMin: formData.salaryMin || undefined,
+        salaryMax: formData.salaryMax || undefined,
+        notes: formData.notes?.length ? formData.notes : undefined,
+      };
+      onSubmit(dataToSend);
+    }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            required
-            fullWidth
-            label="Company"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            required
-            fullWidth
-            label="Position"
-            name="position"
-            value={formData.position}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Vacancy URL"
-            name="url"
-            value={formData.url}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField
-            fullWidth
-            label="Contact Name"
-            name="contactName"
-            value={formData.contactName}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField
-            fullWidth
-            label="Contact Email"
-            name="contactEmail"
-            value={formData.contactEmail}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField
-            fullWidth
-            label="Contact Phone"
-            name="contactPhone"
-            value={formData.contactPhone}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <TextField
-            fullWidth
-            label="Salary Min"
-            name="salaryMin"
-            type="number"
-            value={formData.salaryMin}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <TextField
-            fullWidth
-            label="Salary Max"
-            name="salaryMax"
-            type="number"
-            value={formData.salaryMax}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <TextField
-            fullWidth
-            label="Source"
-            name="source"
-            value={formData.source}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12} sm={3}>
-          <FormControl fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
-              name="status"
-              value={formData.status}
-              onChange={handleSelectChange}
-              label="Status"
-            >
-              {STATUSES.map((s) => (
-                <MenuItem key={s} value={s}>{s}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Applied Date"
-            name="appliedDate"
-            type="date"
-            value={formData.appliedDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            label="Next Event Date"
-            name="nextEventDate"
-            type="date"
-            value={formData.nextEventDate}
-            onChange={handleChange}
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            label="Notes (one per line)"
-            name="notes"
-            multiline
-            rows={4}
-            value={formData.notes}
-            onChange={handleChange}
-          />
-        </Grid>
-        <Grid item xs={12}>
-          <Button type="submit" variant="contained" disabled={loading} fullWidth>
-            {loading ? 'Saving...' : initialData?._id ? 'Update' : 'Create'}
-          </Button>
-          {error && <FormHelperText error>{error}</FormHelperText>}
-        </Grid>
-      </Grid>
-    </Box>
+    <Paper sx={{ p: 3, maxWidth: 800, mx: 'auto' }}>
+      <Typography variant="h5" gutterBottom>
+        {isEdit ? 'Edit Application' : 'New Application'}
+      </Typography>
+      <Box component="form" onSubmit={handleSubmit} noValidate>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Company *"
+              value={formData.company}
+              onChange={(e) => handleChange('company', e.target.value)}
+              error={!!errors.company}
+              helperText={errors.company}
+              required
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Position *"
+              value={formData.position}
+              onChange={(e) => handleChange('position', e.target.value)}
+              error={!!errors.position}
+              helperText={errors.position}
+              required
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 100%' }}>
+            <TextField
+              fullWidth
+              label="Job URL"
+              value={formData.url}
+              onChange={(e) => handleChange('url', e.target.value)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Contact Name"
+              value={formData.contact?.name || ''}
+              onChange={(e) => handleContactChange('name', e.target.value)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Contact Email"
+              value={formData.contact?.email || ''}
+              onChange={(e) => handleContactChange('email', e.target.value)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Contact Phone"
+              value={formData.contact?.phone || ''}
+              onChange={(e) => handleContactChange('phone', e.target.value)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Salary Min"
+              type="number"
+              value={formData.salaryMin ?? ''}
+              onChange={(e) => handleChange('salaryMin', e.target.value ? Number(e.target.value) : undefined)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Salary Max"
+              type="number"
+              value={formData.salaryMax ?? ''}
+              onChange={(e) => handleChange('salaryMax', e.target.value ? Number(e.target.value) : undefined)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Source"
+              value={formData.source}
+              onChange={(e) => handleChange('source', e.target.value)}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <FormControl fullWidth error={!!errors.status}>
+              <InputLabel>Status *</InputLabel>
+              <Select
+                value={formData.status}
+                label="Status *"
+                onChange={(e) => handleChange('status', e.target.value)}
+              >
+                {statusOptions.map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {s}
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
+            </FormControl>
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Applied Date"
+              type="date"
+              value={formData.appliedDate}
+              onChange={(e) => handleChange('appliedDate', e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+            <TextField
+              fullWidth
+              label="Next Event Date"
+              type="date"
+              value={formData.nextEventDate}
+              onChange={(e) => handleChange('nextEventDate', e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 100%' }}>
+            <TextField
+              fullWidth
+              label="Notes (one per line)"
+              multiline
+              rows={3}
+              value={formData.notes?.join('\n') || ''}
+              onChange={(e) =>
+                handleChange(
+                  'notes',
+                  e.target.value.split('\n').filter((line) => line.trim() !== '')
+                )
+              }
+            />
+          </Box>
+          <Box sx={{ flex: '1 1 100%', display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
+            <Button onClick={onCancel}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary">
+              {isEdit ? 'Update' : 'Create'}
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    </Paper>
   );
 };

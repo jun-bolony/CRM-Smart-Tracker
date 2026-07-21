@@ -1,36 +1,36 @@
 export type ApplicationStatus =
-  | 'Sent'        // Response sent
-  | 'Viewed'      // Viewed by employer
-  | 'Interview'   // Interview scheduled
-  | 'Test'        // Test task assigned
-  | 'Offer'       // Offer received
-  | 'Rejected'    // Rejected
-  | 'Archived';   // Archived
+  | 'Sent'
+  | 'Viewed'
+  | 'Interview'
+  | 'Test'
+  | 'Offer'
+  | 'Rejected'
+  | 'Archived';
 
 export interface Application {
-  _id?: string;                 // MongoDB ObjectId (string)
-  userId?: string;              // For future authentication
-  company: string;              // Company name (required)
-  position: string;             // Job title (required)
-  url?: string;                 // Link to job posting
+  _id?: string;
+  userId?: string;
+  company: string;
+  position: string;
+  url?: string;
   contact?: {
     name?: string;
     email?: string;
     phone?: string;
   };
-  salaryMin?: number;           // Minimum salary
-  salaryMax?: number;           // Maximum salary
-  source?: string;              // Source (LinkedIn, DOU, etc.)
-  status: ApplicationStatus;    // Current status
-  appliedDate: Date | string;   // Date of application (defaults to today)
-  nextEventDate?: Date | string; // Date of next event (interview, deadline)
-  notes?: string[];             // Simple text notes
-  statusHistory?: {             // Status change history
+  salaryMin?: number;
+  salaryMax?: number;
+  source?: string;
+  status: ApplicationStatus;
+  appliedDate: Date | string;
+  nextEventDate?: Date | string;
+  notes?: string[];
+  statusHistory?: {
     status: ApplicationStatus;
     changedAt: Date | string;
   }[];
-  createdAt?: Date | string;    // System creation timestamp
-  updatedAt?: Date | string;    // System update timestamp
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface ApiResponse<T = any> {
@@ -42,7 +42,7 @@ export interface ApiResponse<T = any> {
 export interface ApplicationQueryParams {
   status?: ApplicationStatus | ApplicationStatus[];
   source?: string;
-  search?: string;           // search by company or position
+  search?: string;
   sortBy?: 'appliedDate' | 'nextEventDate' | 'salaryMax';
   sortOrder?: 'asc' | 'desc';
   page?: number;

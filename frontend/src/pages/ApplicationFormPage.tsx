@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Typography, Paper } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container } from '@mui/material';
 import type { Application } from '../types/Application';
-import { applicationApi } from '../services/api';
+import { getApplication, createApplication, updateApplication } from '../services/api';
 import { ApplicationForm } from '../components/ApplicationForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
@@ -12,62 +12,61 @@ export const ApplicationFormPage = () => {
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const [initialData, setInitialData] = useState<Partial<Application> | undefined>(undefined);
-  const [loading, setLoading] = useState(isEdit);
-  const [submitLoading, setSubmitLoading] = useState(false);
+  const [initialData, setInitialData] = useState<Partial<Application> | null>(null);
+  const [loading, setLoading] = useState<boolean>(isEdit);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isEdit) {
-      const fetchData = async () => {
+    if (isEdit && id) {
+      const loadApplication = async () => {
         try {
-          setLoading(true);
-          const data = await applicationApi.getOne(id!);
+          const data = await getApplication(id);
           setInitialData(data);
-          setError(null);
         } catch (err: any) {
-          setError(err.message);
+          setError(err.message || 'Failed to load application');
         } finally {
           setLoading(false);
         }
       };
-      fetchData();
+      loadApplication();
     } else {
       setInitialData({});
+      setLoading(false);
     }
   }, [id, isEdit]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (
+    data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
+  ) => {
+    setError(null);
     try {
-      setSubmitLoading(true);
-      if (isEdit) {
-        await applicationApi.update(id!, data);
+      if (isEdit && id) {
+        await updateApplication(id, data);
       } else {
-        await applicationApi.create(data);
+        await createApplication(data);
       }
       navigate('/');
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setSubmitLoading(false);
+      setError(err.message || 'Failed to save application');
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  const handleCancel = () => {
+    navigate('/');
+  };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          {isEdit ? 'Edit Application' : 'New Application'}
-        </Typography>
-        <ApplicationForm
-          initialData={initialData}
-          onSubmit={handleSubmit}
-          loading={submitLoading}
-          error={error || undefined}
-        />
-      </Paper>
+      <ApplicationForm
+        initialData={initialData || undefined}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        isEdit={isEdit}
+      />
       <ErrorSnackbar
         open={!!error}
         message={error || ''}

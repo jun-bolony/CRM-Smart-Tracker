@@ -1,51 +1,49 @@
-import axios from 'axios';
-import type { Application, ApiResponse, ApplicationQueryParams } from '../types/Application';
+import axios, { type AxiosInstance, type AxiosError } from 'axios';
+import type { Application } from '../types/Application';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: { 'Content-Type': 'application/json' },
+const apiClient: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const message = error.response?.data?.message || error.message || 'Unknown error';
+apiClient.interceptors.response.use(
+  (response) => {
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Request failed');
+      }
+    }
+    return response.data;
+  },
+  (error: AxiosError) => {
+    const message =
+      (error.response?.data as any)?.message ||
+      error.message ||
+      'Network error';
     return Promise.reject(new Error(message));
   }
 );
 
-export const applicationApi = {
-  getAll: async (params?: ApplicationQueryParams): Promise<Application[]> => {
-    const response = await api.get<ApiResponse<Application[]>>('/api/applications', { params });
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch');
-    return response.data.data || [];
-  },
+export const getApplications = (): Promise<Application[]> => {
+  return apiClient.get('/api/applications');
+};
 
-  getOne: async (id: string): Promise<Application> => {
-    const response = await api.get<ApiResponse<Application>>(`/api/applications/${id}`);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch');
-    if (!response.data.data) throw new Error('No data');
-    return response.data.data;
-  },
+export const getApplication = (id: string): Promise<Application> => {
+  return apiClient.get(`/api/applications/${id}`);
+};
 
-  create: async (data: Omit<Application, '_id' | 'createdAt' | 'updatedAt'>): Promise<Application> => {
-    const response = await api.post<ApiResponse<Application>>('/api/applications', data);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to create');
-    if (!response.data.data) throw new Error('No data');
-    return response.data.data;
-  },
+export const createApplication = (data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>): Promise<Application> => {
+  return apiClient.post('/api/applications', data);
+};
 
-  update: async (id: string, data: Partial<Application>): Promise<Application> => {
-    const response = await api.put<ApiResponse<Application>>(`/api/applications/${id}`, data);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to update');
-    if (!response.data.data) throw new Error('No data');
-    return response.data.data;
-  },
+export const updateApplication = (id: string, data: Partial<Application>): Promise<Application> => {
+  return apiClient.put(`/api/applications/${id}`, data);
+};
 
-  delete: async (id: string): Promise<void> => {
-    const response = await api.delete<ApiResponse>(`/api/applications/${id}`);
-    if (!response.data.success) throw new Error(response.data.message || 'Failed to delete');
-  },
+export const deleteApplication = (id: string): Promise<void> => {
+  return apiClient.delete(`/api/applications/${id}`);
 };

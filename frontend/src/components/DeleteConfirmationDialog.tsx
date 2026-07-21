@@ -1,25 +1,39 @@
-import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+} from '@mui/material';
 
-interface Props {
+interface DeleteConfirmationDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  company: string;
-  position: string;
+  itemName?: string;
 }
 
-export const DeleteConfirmationDialog = ({ open, onClose, onConfirm, company, position }: Props) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Delete Application</DialogTitle>
-    <DialogContent>
-      <DialogContentText>
-        Are you sure you want to delete the application for <strong>{company}</strong> – <strong>{position}</strong>?
-        This action cannot be undone.
-      </DialogContentText>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose}>Cancel</Button>
-      <Button onClick={onConfirm} color="error" variant="contained">Delete</Button>
-    </DialogActions>
-  </Dialog>
-);
+export const DeleteConfirmationDialog = ({
+  open,
+  onClose,
+  onConfirm,
+  itemName = 'this application',
+}: DeleteConfirmationDialogProps) => {
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Are you sure you want to delete {itemName}? This action cannot be undone.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onConfirm} color="error" variant="contained">
+          Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
