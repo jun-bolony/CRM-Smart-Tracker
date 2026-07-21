@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
-import type { Application } from '../types/Application';
+import type { Application, ApplicationQueryParams } from '../types/Application';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
@@ -28,8 +28,8 @@ apiClient.interceptors.response.use(
   }
 );
 
-export const getApplications = (): Promise<Application[]> => {
-  return apiClient.get('/api/applications');
+export const getApplications = (params?: ApplicationQueryParams): Promise<Application[]> => {
+  return apiClient.get('/api/applications', { params });
 };
 
 export const getApplication = (id: string): Promise<Application> => {
