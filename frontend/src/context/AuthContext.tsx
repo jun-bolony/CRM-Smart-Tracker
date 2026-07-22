@@ -1,5 +1,6 @@
 // frontend/src/context/AuthContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { login as apiLogin, register as apiRegister } from '../services/api';
 
 interface AuthContextType {
@@ -47,7 +48,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  // If token exists but no user, clear (optional)
   useEffect(() => {
     if (token && !user) {
       logout();

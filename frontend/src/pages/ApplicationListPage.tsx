@@ -12,9 +12,9 @@ import {
   InputLabel,
   Chip,
   OutlinedInput,
-  IconButton,
   AppBar,
   Toolbar,
+  Paper, // <-- добавлен импорт Paper
 } from '@mui/material';
 import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
@@ -172,95 +172,104 @@ export const ApplicationListPage = () => {
           </Button>
         </Box>
 
-        {/* Filters */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
-          <TextField
-            label="Search"
-            value={search}
-            onChange={handleSearchChange}
-            size="small"
-            sx={{ minWidth: 200 }}
-          />
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              multiple
-              value={statusFilter}
-              onChange={handleStatusChange}
-              input={<OutlinedInput label="Status" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} size="small" />
-                  ))}
-                </Box>
-              )}
-            >
-              {statusOptions.map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Source</InputLabel>
-            <Select
-              value={sourceFilter}
-              onChange={handleSourceChange}
-              label="Source"
-            >
-              <MenuItem value="">All</MenuItem>
-              {sourceOptions.map((src) => (
-                <MenuItem key={src} value={src}>
-                  {src}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Sort By</InputLabel>
-            <Select
-              value={sortBy}
-              onChange={handleSortByChange}
-              label="Sort By"
-            >
-              <MenuItem value="appliedDate">Applied Date</MenuItem>
-              <MenuItem value="nextEventDate">Next Event</MenuItem>
-              <MenuItem value="salaryMax">Salary Max</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <InputLabel>Order</InputLabel>
-            <Select
-              value={sortOrder}
-              onChange={handleSortOrderChange}
-              label="Order"
-            >
-              <MenuItem value="asc">Asc</MenuItem>
-              <MenuItem value="desc">Desc</MenuItem>
-            </Select>
-          </FormControl>
-          <Button variant="outlined" onClick={handleResetFilters}>
-            Reset Filters
-          </Button>
-        </Box>
+        {/* Filters - wrapped in Paper for better visibility */}
+        <Paper
+          elevation={1}
+          sx={{
+            p: 2,
+            mb: 3,
+            backgroundColor: 'background.paper', // ensures contrast
+          }}
+        >
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <TextField
+              label="Search"
+              value={search}
+              onChange={handleSearchChange}
+              size="small"
+              sx={{ minWidth: 200 }}
+            />
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                multiple
+                value={statusFilter}
+                onChange={handleStatusChange}
+                input={<OutlinedInput label="Status" />}
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => (
+                      <Chip key={value} label={value} size="small" />
+                    ))}
+                  </Box>
+                )}
+              >
+                {statusOptions.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Source</InputLabel>
+              <Select
+                value={sourceFilter}
+                onChange={handleSourceChange}
+                label="Source"
+              >
+                <MenuItem value="">All</MenuItem>
+                {sourceOptions.map((src) => (
+                  <MenuItem key={src} value={src}>
+                    {src}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Sort By</InputLabel>
+              <Select
+                value={sortBy}
+                onChange={handleSortByChange}
+                label="Sort By"
+              >
+                <MenuItem value="appliedDate">Applied Date</MenuItem>
+                <MenuItem value="nextEventDate">Next Event</MenuItem>
+                <MenuItem value="salaryMax">Salary Max</MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <InputLabel>Order</InputLabel>
+              <Select
+                value={sortOrder}
+                onChange={handleSortOrderChange}
+                label="Order"
+              >
+                <MenuItem value="asc">Asc</MenuItem>
+                <MenuItem value="desc">Desc</MenuItem>
+              </Select>
+            </FormControl>
+            <Button variant="outlined" onClick={handleResetFilters}>
+              Reset Filters
+            </Button>
+          </Box>
+        </Paper>
 
         {loading ? (
           <LoadingSpinner />
         ) : (
           <ApplicationTable
             applications={applications}
-            onEdit={(id) => navigate(`/edit/${id}`)}
+            onEdit={(id: string) => navigate(`/edit/${id}`)}
             onDelete={handleDeleteClick}
-            onDetail={(id) => navigate(`/detail/${id}`)}
+            onRowClick={(id: string) => navigate(`/detail/${id}`)}
           />
         )}
 
         <DeleteConfirmationDialog
           open={deleteDialogOpen}
           onConfirm={handleDeleteConfirm}
-          onCancel={handleDeleteCancel}
+          onClose={handleDeleteCancel}
         />
         <ErrorSnackbar
           open={!!error}
