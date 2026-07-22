@@ -40,7 +40,7 @@ export interface ApiResponse<T = any> {
 }
 
 export interface ApplicationQueryParams {
-  status?: ApplicationStatus | ApplicationStatus[];
+  status?: string; // comma-separated statuses, e.g. "Sent,Viewed"
   source?: string;
   search?: string;
   sortBy?: 'appliedDate' | 'nextEventDate' | 'salaryMax';

@@ -12,8 +12,8 @@ import {
   InputLabel,
   Chip,
   OutlinedInput,
-  SelectChangeEvent,
 } from '@mui/material';
+import type { SelectChangeEvent } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
 import { getApplications, deleteApplication } from '../services/api';
