@@ -113,6 +113,7 @@ exports.createApplication = async (req, res, next) => {
     const newApp = new Application(data);
     // Initialize statusHistory with the current status
     newApp.statusHistory = [{ status: newApp.status, changedAt: new Date() }];
+    console.log('[createApplication] Initial statusHistory:', newApp.statusHistory);
     const saved = await newApp.save();
     res.status(201).json(formatResponse(true, saved));
   } catch (err) {
@@ -131,23 +132,52 @@ exports.updateApplication = async (req, res, next) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // First, get the current document to check status and build update operations
     const existing = await Application.findById(id);
     if (!existing) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }
 
-    // If status is changing, push a new entry to statusHistory
+    // Prepare update object
+    const updateOperations = {};
+
+    // Handle status change separately to add to statusHistory
     if (updateData.status && updateData.status !== existing.status) {
-      existing.statusHistory.push({
-        status: updateData.status,
-        changedAt: new Date()
-      });
+      // Add new status history entry
+      updateOperations['$push'] = {
+        statusHistory: { status: updateData.status, changedAt: new Date() }
+      };
+      // Set the new status
+      updateOperations['$set'] = { status: updateData.status };
+      console.log('[updateApplication] Status changed from', existing.status, 'to', updateData.status);
+    } else {
+      // No status change, but we still need to apply other updates
+      updateOperations['$set'] = {};
     }
 
-    // Apply all other updates
-    existing.set(updateData);
-    const updated = await existing.save();
+    // Add all other fields to $set (excluding status because we handled it)
+    for (const key in updateData) {
+      if (key !== 'status') {
+        updateOperations['$set'][key] = updateData[key];
+      }
+    }
 
+    // If $set is empty, we still need to update at least something? 
+    // If only status changed, $set already contains status.
+    // If no fields to update, we can just return the existing doc.
+    if (Object.keys(updateOperations['$set']).length === 0 && !updateOperations['$push']) {
+      // Nothing to update
+      return res.status(200).json(formatResponse(true, existing));
+    }
+
+    // Perform the update atomically
+    const updated = await Application.findByIdAndUpdate(
+      id,
+      updateOperations,
+      { new: true, runValidators: true }
+    );
+
+    console.log('[updateApplication] Updated statusHistory length:', updated.statusHistory.length);
     res.status(200).json(formatResponse(true, updated));
   } catch (err) {
     if (err.name === 'ValidationError') {
