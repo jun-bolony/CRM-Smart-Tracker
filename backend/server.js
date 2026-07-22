@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 const applicationsRouter = require('./routes/applications');
 app.use('/api/applications', applicationsRouter);
 
-// ---- Stats route ----
+// ---- Stats route (added for analytics) ----
 const statsRouter = require('./routes/stats');
 app.use('/api/stats', statsRouter);
 

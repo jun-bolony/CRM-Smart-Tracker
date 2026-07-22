@@ -57,7 +57,6 @@ export const Dashboard = () => {
 
   const { statusDistribution, timeline, topSources, funnel, totalApplications, offerCount, offerRate } = stats;
 
-  // Ensure pie chart has at least one entry
   const pieData = statusDistribution.length > 0 ? statusDistribution : [{ name: 'No data', value: 1 }];
 
   return (

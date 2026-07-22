@@ -3,6 +3,8 @@ const Application = require('../models/Application');
 
 exports.getStats = async (req, res, next) => {
   try {
+    console.log('[getStats] Fetching statistics...');
+
     const statuses = ['Sent', 'Viewed', 'Interview', 'Test', 'Offer', 'Rejected', 'Archived'];
 
     const [
@@ -50,8 +52,10 @@ exports.getStats = async (req, res, next) => {
       offerRate: totalApplications > 0 ? Math.round((offerCount / totalApplications) * 100) : 0,
     };
 
+    console.log('[getStats] Statistics computed successfully');
     res.status(200).json({ success: true, data });
   } catch (err) {
+    console.error('[getStats] Error:', err);
     next(err);
   }
 };
