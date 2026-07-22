@@ -1,3 +1,4 @@
+// frontend/src/types/Application.ts
 export type ApplicationStatus =
   | 'Sent'
   | 'Viewed'

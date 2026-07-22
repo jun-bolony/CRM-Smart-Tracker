@@ -1,3 +1,4 @@
+// backend/controllers/applications.js
 const Application = require('../models/Application');
 
 // Helper function for formatting the response
@@ -33,7 +34,6 @@ exports.getAllApplications = async (req, res, next) => {
 
     // Source filter (exact match, case-insensitive optional)
     if (source) {
-      // Trim and allow case-insensitive if you prefer, but exact match is fine
       const sourceTrimmed = source.trim();
       if (sourceTrimmed) {
         filter.source = sourceTrimmed;
@@ -98,20 +98,21 @@ exports.getApplicationById = async (req, res, next) => {
   }
 };
 
-// Create a new request
+// Create a new application with initial status history
 exports.createApplication = async (req, res, next) => {
   try {
     const data = req.body;
 
-    // Basic validation of required fields (duplicate for reliability)
+    // Basic validation of required fields
     if (!data.company || !data.position) {
       return res.status(400).json(
         formatResponse(false, null, 'Company and position are required')
       );
     }
 
-    // If the status is not passed, the default from the scheme will be used
     const newApp = new Application(data);
+    // Initialize statusHistory with the current status
+    newApp.statusHistory = [{ status: newApp.status, changedAt: new Date() }];
     const saved = await newApp.save();
     res.status(201).json(formatResponse(true, saved));
   } catch (err) {
@@ -124,22 +125,29 @@ exports.createApplication = async (req, res, next) => {
   }
 };
 
-// Update the application (full or partial)
+// Update application, automatically adding status change to history
 exports.updateApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Search and update, return the updated document
-    const updated = await Application.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true, runValidators: true } // return new, start validation
-    );
-
-    if (!updated) {
+    const existing = await Application.findById(id);
+    if (!existing) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }
+
+    // If status is changing, push a new entry to statusHistory
+    if (updateData.status && updateData.status !== existing.status) {
+      existing.statusHistory.push({
+        status: updateData.status,
+        changedAt: new Date()
+      });
+    }
+
+    // Apply all other updates
+    existing.set(updateData);
+    const updated = await existing.save();
+
     res.status(200).json(formatResponse(true, updated));
   } catch (err) {
     if (err.name === 'ValidationError') {
