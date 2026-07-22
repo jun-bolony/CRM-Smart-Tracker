@@ -49,3 +49,13 @@ export interface ApplicationQueryParams {
   page?: number;
   limit?: number;
 }
+
+export interface StatsData {
+  statusDistribution: { name: string; value: number }[];
+  timeline: { date: string; count: number }[];
+  topSources: { source: string; count: number }[];
+  funnel: { stage: string; count: number }[];
+  totalApplications: number;
+  offerCount: number;
+  offerRate: number;
+}

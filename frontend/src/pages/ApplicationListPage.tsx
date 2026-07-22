@@ -147,14 +147,23 @@ export const ApplicationListPage = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Applications</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<Add />}
-          onClick={() => navigate('/new')}
-        >
-          Add Application
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => navigate('/dashboard')}
+          >
+            Dashboard
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<Add />}
+            onClick={() => navigate('/new')}
+          >
+            Add Application
+          </Button>
+        </Box>
       </Box>
 
       {/* Filter Bar with visible backgrounds */}

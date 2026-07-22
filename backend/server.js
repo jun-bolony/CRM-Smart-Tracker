@@ -25,6 +25,10 @@ app.get('/', (req, res) => {
 const applicationsRouter = require('./routes/applications');
 app.use('/api/applications', applicationsRouter);
 
+// ---- Stats route ----
+const statsRouter = require('./routes/stats');
+app.use('/api/stats', statsRouter);
+
 // ---- Global error handler (must be after all routes) ----
 const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);

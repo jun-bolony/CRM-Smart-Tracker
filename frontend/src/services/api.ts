@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
-import type { Application, ApplicationQueryParams } from '../types/Application';
+import type { Application, ApplicationQueryParams, StatsData } from '../types/Application';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
@@ -46,4 +46,8 @@ export const updateApplication = (id: string, data: Partial<Application>): Promi
 
 export const deleteApplication = (id: string): Promise<void> => {
   return apiClient.delete(`/api/applications/${id}`);
+};
+
+export const getStats = (): Promise<StatsData> => {
+  return apiClient.get('/api/stats');
 };
