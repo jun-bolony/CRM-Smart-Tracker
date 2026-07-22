@@ -6,6 +6,7 @@ exports.getStats = async (req, res, next) => {
     console.log('[getStats] Fetching statistics...');
 
     const statuses = ['Sent', 'Viewed', 'Interview', 'Test', 'Offer', 'Rejected', 'Archived'];
+    const userId = req.userId; // <-- ADDED
 
     const [
       statusDistribution,
@@ -16,24 +17,25 @@ exports.getStats = async (req, res, next) => {
       funnelCounts
     ] = await Promise.all([
       Application.aggregate([
+        { $match: { userId: userId } }, // <-- ADDED
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $project: { status: '$_id', count: 1, _id: 0 } }
       ]),
       Application.aggregate([
-        { $match: { appliedDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } },
+        { $match: { userId: userId, appliedDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } }, // <-- ADDED userId
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$appliedDate' } }, count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
       ]),
       Application.aggregate([
-        { $match: { source: { $ne: null, $ne: '' } } },
+        { $match: { userId: userId, source: { $ne: null, $ne: '' } } }, // <-- ADDED userId
         { $group: { _id: '$source', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 }
       ]),
-      Application.countDocuments(),
-      Application.countDocuments({ status: 'Offer' }),
+      Application.countDocuments({ userId: userId }), // <-- ADDED
+      Application.countDocuments({ userId: userId, status: 'Offer' }), // <-- ADDED
       Promise.all(statuses.map(status =>
-        Application.countDocuments({ 'statusHistory.status': status })
+        Application.countDocuments({ userId: userId, 'statusHistory.status': status }) // <-- ADDED userId
       ))
     ]);
 

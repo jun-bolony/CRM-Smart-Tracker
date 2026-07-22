@@ -12,7 +12,7 @@ const formatResponse = (success, data = null, message = '') => ({
 exports.getAllApplications = async (req, res, next) => {
   try {
     const { status, source, search, sortBy, sortOrder, page, limit } = req.query;
-    const filter = {};
+    const filter = { userId: req.userId }; // <-- ADDED userId filter
 
     // Log incoming query parameters for debugging
     console.log('[getAllApplications] Query params:', { status, source, search, sortBy, sortOrder, page, limit });
@@ -88,7 +88,8 @@ exports.getAllApplications = async (req, res, next) => {
 exports.getApplicationById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const application = await Application.findById(id);
+    // <-- ADDED userId filter
+    const application = await Application.findOne({ _id: id, userId: req.userId });
     if (!application) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }
@@ -110,7 +111,11 @@ exports.createApplication = async (req, res, next) => {
       );
     }
 
-    const newApp = new Application(data);
+    // <-- ADDED userId from token
+    const newApp = new Application({
+      ...data,
+      userId: req.userId,
+    });
     // Initialize statusHistory with the current status
     newApp.statusHistory = [{ status: newApp.status, changedAt: new Date() }];
     console.log('[createApplication] Initial statusHistory:', newApp.statusHistory);
@@ -132,8 +137,8 @@ exports.updateApplication = async (req, res, next) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // First, get the current document to check status and build update operations
-    const existing = await Application.findById(id);
+    // <-- CHANGED: find by id AND userId
+    const existing = await Application.findOne({ _id: id, userId: req.userId });
     if (!existing) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }
@@ -192,7 +197,8 @@ exports.updateApplication = async (req, res, next) => {
 exports.deleteApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const deleted = await Application.findByIdAndDelete(id);
+    // <-- CHANGED: delete with userId check
+    const deleted = await Application.findOneAndDelete({ _id: id, userId: req.userId });
     if (!deleted) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }

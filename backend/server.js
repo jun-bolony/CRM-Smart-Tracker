@@ -22,12 +22,17 @@ app.get('/', (req, res) => {
   res.send('CRM Smart Tracker API is running 🚀');
 });
 
-const applicationsRouter = require('./routes/applications');
-app.use('/api/applications', applicationsRouter);
+// ---- Auth routes (no protection) ----
+const authRouter = require('./routes/auth');
+app.use('/api/auth', authRouter);
 
-// ---- Stats route (added for analytics) ----
+// ---- Protected routes ----
+const authMiddleware = require('./middleware/auth');
+const applicationsRouter = require('./routes/applications');
 const statsRouter = require('./routes/stats');
-app.use('/api/stats', statsRouter);
+
+app.use('/api/applications', authMiddleware, applicationsRouter);
+app.use('/api/stats', authMiddleware, statsRouter);
 
 // ---- Global error handler (must be after all routes) ----
 const errorHandler = require('./middleware/errorHandler');

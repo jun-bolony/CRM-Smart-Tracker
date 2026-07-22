@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
+  Typography,
   Button,
   Box,
-  Typography,
   TextField,
   Select,
   MenuItem,
@@ -12,15 +12,19 @@ import {
   InputLabel,
   Chip,
   OutlinedInput,
+  IconButton,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
+import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
-import { Add } from '@mui/icons-material';
-import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
-import { getApplications, deleteApplication } from '../services/api';
 import { ApplicationTable } from '../components/ApplicationTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
+import { getApplications, deleteApplication } from '../services/api';
+import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
+import { useAuth } from '../context/AuthContext';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -32,289 +36,238 @@ const statusOptions: ApplicationStatus[] = [
   'Archived',
 ];
 
+const sourceOptions = ['LinkedIn', 'DOU', 'Recommendation', 'Company Website', 'Other'];
+
 export const ApplicationListPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteName, setDeleteName] = useState<string>('');
 
-  // Filter states
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedStatuses, setSelectedStatuses] = useState<ApplicationStatus[]>([]);
+  // Filter state
+  const [search, setSearch] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string>('');
-  const [sortBy, setSortBy] = useState<ApplicationQueryParams['sortBy']>('appliedDate');
-  const [sortOrder, setSortOrder] = useState<ApplicationQueryParams['sortOrder']>('desc');
+  const [sortBy, setSortBy] = useState<'appliedDate' | 'nextEventDate' | 'salaryMax'>('appliedDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Build filters object — convert status array to comma-separated string
-  const buildFilters = useCallback((): ApplicationQueryParams => {
-    const filters: ApplicationQueryParams = {
-      sortBy,
-      sortOrder,
-    };
-    if (searchTerm.trim()) {
-      filters.search = searchTerm.trim();
-    }
-    if (selectedStatuses.length > 0) {
-      filters.status = selectedStatuses.join(',');
-    }
-    if (sourceFilter.trim()) {
-      filters.source = sourceFilter.trim();
-    }
-    return filters;
-  }, [searchTerm, selectedStatuses, sourceFilter, sortBy, sortOrder]);
+  // Delete dialog
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
-  const loadData = useCallback(
-    async (filters: ApplicationQueryParams) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getApplications(filters);
-        setApplications(data);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load applications');
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const fetchApplications = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params: ApplicationQueryParams = {
+        search: search || undefined,
+        status: statusFilter.length > 0 ? statusFilter.join(',') : undefined,
+        source: sourceFilter || undefined,
+        sortBy,
+        sortOrder,
+      };
+      const data = await getApplications(params);
+      setApplications(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load applications');
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter, sourceFilter, sortBy, sortOrder]);
 
-  // Load data when filters change (with debounce for search)
   useEffect(() => {
     const timer = setTimeout(() => {
-      const filters = buildFilters();
-      loadData(filters);
+      fetchApplications();
     }, 500);
     return () => clearTimeout(timer);
-  }, [buildFilters, loadData]);
+  }, [fetchApplications]);
 
-  // Initial load (on mount) – the effect above runs on mount anyway
-  useEffect(() => {
-    // No extra logic needed, the debounced effect will run once.
-  }, []);
-
-  const handleEdit = (id: string) => {
-    navigate(`/edit/${id}`);
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
   };
 
-  const handleDelete = (id: string) => {
-    const app = applications.find((a) => a._id === id);
-    if (app) {
-      setDeleteId(id);
-      setDeleteName(`${app.company} - ${app.position}`);
-    }
+  const handleStatusChange = (e: SelectChangeEvent<typeof statusFilter>) => {
+    const value = e.target.value;
+    setStatusFilter(typeof value === 'string' ? value.split(',') : value);
   };
 
-  const confirmDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await deleteApplication(deleteId);
-      setApplications((prev) => prev.filter((a) => a._id !== deleteId));
-      setDeleteId(null);
-      setDeleteName('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete application');
-      setDeleteId(null);
-      setDeleteName('');
-    }
+  const handleSourceChange = (e: SelectChangeEvent<string>) => {
+    setSourceFilter(e.target.value);
   };
 
-  const cancelDelete = () => {
-    setDeleteId(null);
-    setDeleteName('');
+  const handleSortByChange = (e: SelectChangeEvent<typeof sortBy>) => {
+    setSortBy(e.target.value as typeof sortBy);
   };
 
-  const handleRowClick = (id: string) => {
-    navigate(`/detail/${id}`);
-  };
-
-  const handleStatusChange = (event: SelectChangeEvent<typeof selectedStatuses>) => {
-    const value = event.target.value;
-    setSelectedStatuses(typeof value === 'string' ? value.split(',') as ApplicationStatus[] : value);
+  const handleSortOrderChange = (e: SelectChangeEvent<typeof sortOrder>) => {
+    setSortOrder(e.target.value as typeof sortOrder);
   };
 
   const handleResetFilters = () => {
-    setSearchTerm('');
-    setSelectedStatuses([]);
+    setSearch('');
+    setStatusFilter([]);
     setSourceFilter('');
     setSortBy('appliedDate');
     setSortOrder('desc');
   };
 
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteApplication(deleteId);
+      setDeleteDialogOpen(false);
+      setDeleteId(null);
+      fetchApplications();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete application');
+      setDeleteDialogOpen(false);
+      setDeleteId(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteId(null);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Applications</Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => navigate('/dashboard')}
-          >
+    <>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            CRM Smart Tracker
+          </Typography>
+          <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />}>
             Dashboard
           </Button>
+          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
+            Logout
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="h4" component="h1">
+            Applications
+          </Typography>
           <Button
             variant="contained"
             color="primary"
-            startIcon={<Add />}
+            startIcon={<AddIcon />}
             onClick={() => navigate('/new')}
           >
             Add Application
           </Button>
         </Box>
-      </Box>
 
-      {/* Filter Bar with visible backgrounds */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 2,
-          alignItems: 'center',
-          mb: 3,
-        }}
-      >
-        <TextField
-          label="Search"
-          placeholder="Company or position"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          size="small"
-          sx={{
-            minWidth: 200,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-          }}
-          slotProps={{ inputLabel: { shrink: true } }}
+        {/* Filters */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
+          <TextField
+            label="Search"
+            value={search}
+            onChange={handleSearchChange}
+            size="small"
+            sx={{ minWidth: 200 }}
+          />
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              multiple
+              value={statusFilter}
+              onChange={handleStatusChange}
+              input={<OutlinedInput label="Status" />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => (
+                    <Chip key={value} label={value} size="small" />
+                  ))}
+                </Box>
+              )}
+            >
+              {statusOptions.map((status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Source</InputLabel>
+            <Select
+              value={sourceFilter}
+              onChange={handleSourceChange}
+              label="Source"
+            >
+              <MenuItem value="">All</MenuItem>
+              {sourceOptions.map((src) => (
+                <MenuItem key={src} value={src}>
+                  {src}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Sort By</InputLabel>
+            <Select
+              value={sortBy}
+              onChange={handleSortByChange}
+              label="Sort By"
+            >
+              <MenuItem value="appliedDate">Applied Date</MenuItem>
+              <MenuItem value="nextEventDate">Next Event</MenuItem>
+              <MenuItem value="salaryMax">Salary Max</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel>Order</InputLabel>
+            <Select
+              value={sortOrder}
+              onChange={handleSortOrderChange}
+              label="Order"
+            >
+              <MenuItem value="asc">Asc</MenuItem>
+              <MenuItem value="desc">Desc</MenuItem>
+            </Select>
+          </FormControl>
+          <Button variant="outlined" onClick={handleResetFilters}>
+            Reset Filters
+          </Button>
+        </Box>
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <ApplicationTable
+            applications={applications}
+            onEdit={(id) => navigate(`/edit/${id}`)}
+            onDelete={handleDeleteClick}
+            onDetail={(id) => navigate(`/detail/${id}`)}
+          />
+        )}
+
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
         />
-
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: 200,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-          }}
-        >
-          <InputLabel id="status-filter-label" shrink>
-            Status
-          </InputLabel>
-          <Select
-            labelId="status-filter-label"
-            id="status-filter"
-            multiple
-            value={selectedStatuses}
-            onChange={handleStatusChange}
-            input={<OutlinedInput label="Status" notched />}
-            renderValue={(selected) => (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                {selected.map((value) => (
-                  <Chip key={value} label={value} size="small" />
-                ))}
-              </Box>
-            )}
-          >
-            {statusOptions.map((status) => (
-              <MenuItem key={status} value={status}>
-                {status}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <TextField
-          label="Source"
-          placeholder="e.g. LinkedIn"
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-          size="small"
-          sx={{
-            minWidth: 150,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-          }}
-          slotProps={{ inputLabel: { shrink: true } }}
+        <ErrorSnackbar
+          open={!!error}
+          message={error || ''}
+          onClose={() => setError(null)}
         />
-
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: 150,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-          }}
-        >
-          <InputLabel id="sort-by-label" shrink>
-            Sort By
-          </InputLabel>
-          <Select
-            labelId="sort-by-label"
-            id="sort-by"
-            value={sortBy}
-            label="Sort By"
-            onChange={(e) => setSortBy(e.target.value as ApplicationQueryParams['sortBy'])}
-            input={<OutlinedInput label="Sort By" notched />}
-          >
-            <MenuItem value="appliedDate">Applied Date</MenuItem>
-            <MenuItem value="nextEventDate">Next Event</MenuItem>
-            <MenuItem value="salaryMax">Salary Max</MenuItem>
-          </Select>
-        </FormControl>
-
-        <FormControl
-          size="small"
-          sx={{
-            minWidth: 120,
-            backgroundColor: 'background.paper',
-            borderRadius: 1,
-          }}
-        >
-          <InputLabel id="sort-order-label" shrink>
-            Order
-          </InputLabel>
-          <Select
-            labelId="sort-order-label"
-            id="sort-order"
-            value={sortOrder}
-            label="Order"
-            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-            input={<OutlinedInput label="Order" notched />}
-          >
-            <MenuItem value="asc">Ascending</MenuItem>
-            <MenuItem value="desc">Descending</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Button variant="outlined" size="small" onClick={handleResetFilters}>
-          Reset
-        </Button>
-      </Box>
-
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <ApplicationTable
-          applications={applications}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onRowClick={handleRowClick}
-        />
-      )}
-
-      <ErrorSnackbar
-        open={!!error}
-        message={error || ''}
-        onClose={() => setError(null)}
-      />
-
-      <DeleteConfirmationDialog
-        open={!!deleteId}
-        onClose={cancelDelete}
-        onConfirm={confirmDelete}
-        itemName={deleteName}
-      />
-    </Container>
+      </Container>
+    </>
   );
 };
