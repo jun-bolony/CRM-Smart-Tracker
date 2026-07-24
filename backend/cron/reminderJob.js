@@ -6,11 +6,13 @@ const Application = require('../models/Application');
 const { sendReminderEmail } = require('../services/emailService');
 
 const startReminderJob = () => {
-  // Only schedule if email transporter is available (checked inside sendReminderEmail)
-  cron.schedule('* * * * *', async () => {
+  // Schedule job – for testing, you may change the cron expression
+  cron.schedule('0 9 * * *', async () => {
     console.log('[Reminder Job] Running...');
     try {
       const users = await User.find();
+      console.log(`[Reminder Job] Found ${users.length} users`);
+
       for (const user of users) {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -25,7 +27,10 @@ const startReminderJob = () => {
         });
 
         if (applications.length > 0) {
+          console.log(`[Reminder Job] User ${user.email} has ${applications.length} events tomorrow`);
           await sendReminderEmail(user.email, applications);
+        } else {
+          console.log(`[Reminder Job] User ${user.email} has no events tomorrow`);
         }
       }
     } catch (error) {

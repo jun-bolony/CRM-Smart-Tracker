@@ -14,17 +14,39 @@ if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
       pass: process.env.EMAIL_PASS,
     },
   });
-  console.log('Email transporter initialized');
+
+  // Verify connection and credentials on startup
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('[Email Service] Transporter verification failed:', error);
+      // Provide a helpful hint for Gmail users
+      if (error.response && error.response.includes('Username and Password not accepted') &&
+          process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('gmail.com')) {
+        console.error(
+          '[Email Service] ⚠️ Gmail rejected the login. Please use an "App Password" instead of your regular password.\n' +
+          '   Generate one at: https://myaccount.google.com/apppasswords\n' +
+          '   Then set EMAIL_PASS to that 16-character password.'
+        );
+      }
+    } else {
+      console.log('[Email Service] Transporter is ready to send emails');
+    }
+  });
+
+  console.log('[Email Service] Email transporter initialized');
 } else {
-  console.warn('Email credentials not set – reminders will be disabled');
+  console.warn('[Email Service] Email credentials not set – reminders will be disabled');
 }
 
 const sendReminderEmail = async (to, applications) => {
   if (!transporter) {
-    console.warn('Email transporter not available, skipping send');
+    console.warn('[Email Service] Transporter not available, skipping send');
     return;
   }
-  if (!to || applications.length === 0) return;
+  if (!to || applications.length === 0) {
+    console.warn('[Email Service] No recipient or applications, skipping');
+    return;
+  }
 
   try {
     const subject = 'Upcoming Interview/Event Reminder';
@@ -36,15 +58,31 @@ const sendReminderEmail = async (to, applications) => {
       </ul>
       <p>Good luck!</p>
     `;
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject,
       html,
     });
-    console.log(`Reminder email sent to ${to}`);
+    console.log(`[Email Service] Reminder email sent to ${to} (Message ID: ${info.messageId})`);
   } catch (error) {
-    console.error('Error sending reminder email:', error);
+    console.error('[Email Service] Error sending reminder email:', error);
+    if (error.response) {
+      console.error('[Email Service] SMTP response:', error.response);
+    }
+    if (error.code) {
+      console.error('[Email Service] Error code:', error.code);
+    }
+    // Provide a helpful hint for Gmail users
+    if (error.code === 'EAUTH' && 
+        error.response && error.response.includes('Username and Password not accepted') &&
+        process.env.EMAIL_HOST && process.env.EMAIL_HOST.includes('gmail.com')) {
+      console.error(
+        '[Email Service] ⚠️ Gmail rejected the login. Please use an "App Password" instead of your regular password.\n' +
+        '   Generate one at: https://myaccount.google.com/apppasswords\n' +
+        '   Then set EMAIL_PASS to that 16-character password.'
+      );
+    }
   }
 };
 
