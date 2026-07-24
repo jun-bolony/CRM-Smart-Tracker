@@ -14,9 +14,10 @@ import {
   OutlinedInput,
   AppBar,
   Toolbar,
-  Paper, // <-- добавлен импорт Paper
+  Paper,
+  Menu,
 } from '@mui/material';
-import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon } from '@mui/icons-material';
+import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon, GetApp as ExportIcon } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
 import { ApplicationTable } from '../components/ApplicationTable';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -25,6 +26,7 @@ import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog
 import { getApplications, deleteApplication } from '../services/api';
 import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -55,6 +57,9 @@ export const ApplicationListPage = () => {
   // Delete dialog
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+
+  // Export menu
+  const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
 
   const fetchApplications = useCallback(async () => {
     setLoading(true);
@@ -141,6 +146,73 @@ export const ApplicationListPage = () => {
     navigate('/login');
   };
 
+  // Export handlers
+  const handleExportClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setExportAnchorEl(event.currentTarget);
+  };
+
+  const handleExportClose = () => {
+    setExportAnchorEl(null);
+  };
+
+  const convertToCSV = (data: Application[]): string => {
+    if (!data.length) return '';
+    const headers = [
+      'Company', 'Position', 'Status', 'Applied Date', 'Source',
+      'Salary Min', 'Salary Max', 'URL', 'Contact Name', 'Contact Email',
+      'Contact Phone', 'Notes', 'Next Event Date', 'Created At', 'Updated At'
+    ];
+    const rows = data.map(app => [
+      app.company,
+      app.position,
+      app.status,
+      app.appliedDate ? new Date(app.appliedDate).toLocaleDateString() : '',
+      app.source || '',
+      app.salaryMin ?? '',
+      app.salaryMax ?? '',
+      app.url || '',
+      app.contact?.name || '',
+      app.contact?.email || '',
+      app.contact?.phone || '',
+      (app.notes || []).join('; '),
+      app.nextEventDate ? new Date(app.nextEventDate).toLocaleDateString() : '',
+      app.createdAt ? new Date(app.createdAt).toLocaleString() : '',
+      app.updatedAt ? new Date(app.updatedAt).toLocaleString() : '',
+    ]);
+    const escape = (str: string) => `"${str.replace(/"/g, '""')}"`;
+    const headerLine = headers.map(h => escape(h)).join(',');
+    const rowLines = rows.map(row => row.map(cell => escape(String(cell))).join(','));
+    return [headerLine, ...rowLines].join('\n');
+  };
+
+  const handleExport = async (format: 'csv' | 'json') => {
+    try {
+      // Fetch all applications (with a high limit)
+      const allApps = await getApplications({ limit: 10000 });
+      if (format === 'json') {
+        const blob = new Blob([JSON.stringify(allApps, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `applications_${new Date().toISOString().slice(0,10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const csv = convertToCSV(allApps);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `applications_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to export data');
+    }
+    handleExportClose();
+  };
+
   return (
     <>
       <AppBar position="static">
@@ -148,12 +220,24 @@ export const ApplicationListPage = () => {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             CRM Smart Tracker
           </Typography>
+          <ThemeToggle />
           <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />}>
             Dashboard
           </Button>
           <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
             Logout
           </Button>
+          <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick}>
+            Export
+          </Button>
+          <Menu
+            anchorEl={exportAnchorEl}
+            open={Boolean(exportAnchorEl)}
+            onClose={handleExportClose}
+          >
+            <MenuItem onClick={() => handleExport('csv')}>Export CSV</MenuItem>
+            <MenuItem onClick={() => handleExport('json')}>Export JSON</MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
 
@@ -172,13 +256,12 @@ export const ApplicationListPage = () => {
           </Button>
         </Box>
 
-        {/* Filters - wrapped in Paper for better visibility */}
         <Paper
           elevation={1}
           sx={{
             p: 2,
             mb: 3,
-            backgroundColor: 'background.paper', // ensures contrast
+            backgroundColor: 'background.paper',
           }}
         >
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>

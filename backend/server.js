@@ -17,6 +17,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
     process.exit(1);
   });
 
+// Start reminder job after DB connection
+const { startReminderJob } = require('./cron/reminderJob');
+startReminderJob();
+
 app.get('/', (req, res) => {
   res.send('CRM Smart Tracker API is running 🚀');
 });

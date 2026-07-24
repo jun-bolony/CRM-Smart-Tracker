@@ -12,18 +12,15 @@ const formatResponse = (success, data = null, message = '') => ({
 exports.getAllApplications = async (req, res, next) => {
   try {
     const { status, source, search, sortBy, sortOrder, page, limit } = req.query;
-    const filter = { userId: req.userId }; // <-- ADDED userId filter
+    const filter = { userId: req.userId };
 
-    // Log incoming query parameters for debugging
     console.log('[getAllApplications] Query params:', { status, source, search, sortBy, sortOrder, page, limit });
 
-    // Status filter
     if (status) {
       let statusArray;
       if (Array.isArray(status)) {
         statusArray = status;
       } else {
-        // Split by comma and trim each value
         statusArray = status.split(',').map(s => s.trim()).filter(s => s.length > 0);
       }
       if (statusArray.length > 0) {
@@ -32,7 +29,6 @@ exports.getAllApplications = async (req, res, next) => {
       }
     }
 
-    // Source filter (exact match, case-insensitive optional)
     if (source) {
       const sourceTrimmed = source.trim();
       if (sourceTrimmed) {
@@ -41,7 +37,6 @@ exports.getAllApplications = async (req, res, next) => {
       }
     }
 
-    // Search filter (case-insensitive regex on company or position)
     if (search) {
       const searchTrimmed = search.trim();
       if (searchTrimmed) {
@@ -53,17 +48,15 @@ exports.getAllApplications = async (req, res, next) => {
       }
     }
 
-    // Sorting
     const sort = {};
     if (sortBy) {
       const order = sortOrder === 'desc' ? -1 : 1;
       sort[sortBy] = order;
     } else {
-      sort.createdAt = -1; // default sort by newest
+      sort.createdAt = -1;
     }
     console.log('[getAllApplications] Sort:', sort);
 
-    // Pagination (optional, keep default values)
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 100;
     const skip = (pageNum - 1) * limitNum;
@@ -88,7 +81,6 @@ exports.getAllApplications = async (req, res, next) => {
 exports.getApplicationById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    // <-- ADDED userId filter
     const application = await Application.findOne({ _id: id, userId: req.userId });
     if (!application) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
@@ -104,25 +96,21 @@ exports.createApplication = async (req, res, next) => {
   try {
     const data = req.body;
 
-    // Basic validation of required fields
     if (!data.company || !data.position) {
       return res.status(400).json(
         formatResponse(false, null, 'Company and position are required')
       );
     }
 
-    // <-- ADDED userId from token
     const newApp = new Application({
       ...data,
       userId: req.userId,
     });
-    // Initialize statusHistory with the current status
     newApp.statusHistory = [{ status: newApp.status, changedAt: new Date() }];
     console.log('[createApplication] Initial statusHistory:', newApp.statusHistory);
     const saved = await newApp.save();
     res.status(201).json(formatResponse(true, saved));
   } catch (err) {
-    // Handling Mongoose validation errors
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
       return res.status(400).json(formatResponse(false, null, messages.join(', ')));
@@ -131,51 +119,40 @@ exports.createApplication = async (req, res, next) => {
   }
 };
 
-// Update application, automatically adding status change to history
+// Update application, automatically adding status change to history (without automatic note)
 exports.updateApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // <-- CHANGED: find by id AND userId
     const existing = await Application.findOne({ _id: id, userId: req.userId });
     if (!existing) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
     }
 
-    // Prepare update object
     const updateOperations = {};
 
-    // Handle status change separately to add to statusHistory
+    // Handle status change separately – add to statusHistory, but do NOT auto-add a note
     if (updateData.status && updateData.status !== existing.status) {
-      // Add new status history entry
       updateOperations['$push'] = {
         statusHistory: { status: updateData.status, changedAt: new Date() }
       };
-      // Set the new status
       updateOperations['$set'] = { status: updateData.status };
       console.log('[updateApplication] Status changed from', existing.status, 'to', updateData.status);
     } else {
-      // No status change, but we still need to apply other updates
       updateOperations['$set'] = {};
     }
 
-    // Add all other fields to $set (excluding status because we handled it)
     for (const key in updateData) {
       if (key !== 'status') {
         updateOperations['$set'][key] = updateData[key];
       }
     }
 
-    // If $set is empty, we still need to update at least something? 
-    // If only status changed, $set already contains status.
-    // If no fields to update, we can just return the existing doc.
     if (Object.keys(updateOperations['$set']).length === 0 && !updateOperations['$push']) {
-      // Nothing to update
       return res.status(200).json(formatResponse(true, existing));
     }
 
-    // Perform the update atomically
     const updated = await Application.findByIdAndUpdate(
       id,
       updateOperations,
@@ -197,7 +174,6 @@ exports.updateApplication = async (req, res, next) => {
 exports.deleteApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
-    // <-- CHANGED: delete with userId check
     const deleted = await Application.findOneAndDelete({ _id: id, userId: req.userId });
     if (!deleted) {
       return res.status(404).json(formatResponse(false, null, 'Application not found'));
