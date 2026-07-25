@@ -1,6 +1,6 @@
 // Global error handler
 module.exports = (err, req, res, next) => {
-  console.error('Ошибка сервера:', err.stack || err);
+  console.error('Server error:', err.stack || err);
 
   // If the response has already been sent, we delegate further
   if (res.headersSent) {

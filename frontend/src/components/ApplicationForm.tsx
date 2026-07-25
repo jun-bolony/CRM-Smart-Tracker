@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import {
   Box,
   TextField,
@@ -30,7 +30,7 @@ interface ApplicationFormProps {
   isEdit?: boolean;
 }
 
-export const ApplicationForm = ({
+const ApplicationForm = memo(({
   initialData,
   onSubmit,
   onCancel,
@@ -142,7 +142,7 @@ export const ApplicationForm = ({
       </Typography>
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Company *"
@@ -153,7 +153,7 @@ export const ApplicationForm = ({
               required
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Position *"
@@ -172,7 +172,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleChange('url', e.target.value)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Contact Name"
@@ -180,7 +180,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleContactChange('name', e.target.value)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Contact Email"
@@ -188,7 +188,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleContactChange('email', e.target.value)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Contact Phone"
@@ -196,7 +196,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleContactChange('phone', e.target.value)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Salary Min"
@@ -205,7 +205,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleChange('salaryMin', e.target.value ? Number(e.target.value) : undefined)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Salary Max"
@@ -214,7 +214,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleChange('salaryMax', e.target.value ? Number(e.target.value) : undefined)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Source"
@@ -222,7 +222,7 @@ export const ApplicationForm = ({
               onChange={(e) => handleChange('source', e.target.value)}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <FormControl fullWidth error={!!errors.status}>
               <InputLabel>Status *</InputLabel>
               <Select
@@ -239,7 +239,7 @@ export const ApplicationForm = ({
               {errors.status && <FormHelperText>{errors.status}</FormHelperText>}
             </FormControl>
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Applied Date"
@@ -249,7 +249,7 @@ export const ApplicationForm = ({
               slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
-          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: '200px' }}>
+          <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
             <TextField
               fullWidth
               label="Next Event Date"
@@ -284,4 +284,6 @@ export const ApplicationForm = ({
       </Box>
     </Paper>
   );
-};
+});
+
+export { ApplicationForm };

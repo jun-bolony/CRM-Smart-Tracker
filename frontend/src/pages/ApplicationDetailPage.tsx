@@ -44,7 +44,7 @@ const statusColorMap: Record<ApplicationStatus, 'default' | 'primary' | 'seconda
   Archived: 'default',
 };
 
-export const ApplicationDetailPage = () => {
+const ApplicationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -308,3 +308,5 @@ export const ApplicationDetailPage = () => {
     </Container>
   );
 };
+
+export default ApplicationDetailPage;

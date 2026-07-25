@@ -20,7 +20,7 @@ const statusColors: Record<string, string> = {
 
 const CHART_COLORS = ['#2196f3', '#64b5f6', '#ff9800', '#ffc107', '#4caf50', '#f44336', '#9e9e9e'];
 
-export const Dashboard = () => {
+const Dashboard = () => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -179,3 +179,5 @@ export const Dashboard = () => {
     </Container>
   );
 };
+
+export default Dashboard;

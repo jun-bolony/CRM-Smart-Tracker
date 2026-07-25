@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ interface ApplicationTableProps {
   onRowClick?: (id: string) => void;
 }
 
-export const ApplicationTable = ({
+const ApplicationTable = memo(({
   applications,
   onEdit,
   onDelete,
@@ -43,8 +44,8 @@ export const ApplicationTable = ({
   };
 
   return (
-    <TableContainer component={Paper}>
-      <Table>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+      <Table sx={{ minWidth: 650 }}>
         <TableHead>
           <TableRow>
             <TableCell>Company</TableCell>
@@ -111,4 +112,6 @@ export const ApplicationTable = ({
       </Table>
     </TableContainer>
   );
-};
+});
+
+export { ApplicationTable };

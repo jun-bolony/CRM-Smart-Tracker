@@ -7,7 +7,7 @@ import { ApplicationForm } from '../components/ApplicationForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 
-export const ApplicationFormPage = () => {
+const ApplicationFormPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = !!id;
@@ -75,3 +75,5 @@ export const ApplicationFormPage = () => {
     </Container>
   );
 };
+
+export default ApplicationFormPage;

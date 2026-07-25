@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 
-export const LoginPage = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
@@ -86,3 +86,5 @@ export const LoginPage = () => {
     </Container>
   );
 };
+
+export default LoginPage;

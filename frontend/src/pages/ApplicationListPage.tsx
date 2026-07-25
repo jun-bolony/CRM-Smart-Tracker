@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -40,7 +40,7 @@ const statusOptions: ApplicationStatus[] = [
 
 const sourceOptions = ['LinkedIn', 'DOU', 'Recommendation', 'Company Website', 'Other'];
 
-export const ApplicationListPage = () => {
+const ApplicationListPage = memo(() => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -61,25 +61,27 @@ export const ApplicationListPage = () => {
   // Export menu
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
 
+  // Memoize query params to avoid unnecessary re-fetch
+  const queryParams = useMemo<ApplicationQueryParams>(() => ({
+    search: search || undefined,
+    status: statusFilter.length > 0 ? statusFilter.join(',') : undefined,
+    source: sourceFilter || undefined,
+    sortBy,
+    sortOrder,
+  }), [search, statusFilter, sourceFilter, sortBy, sortOrder]);
+
   const fetchApplications = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params: ApplicationQueryParams = {
-        search: search || undefined,
-        status: statusFilter.length > 0 ? statusFilter.join(',') : undefined,
-        source: sourceFilter || undefined,
-        sortBy,
-        sortOrder,
-      };
-      const data = await getApplications(params);
+      const data = await getApplications(queryParams);
       setApplications(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load applications');
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, sourceFilter, sortBy, sortOrder]);
+  }, [queryParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -122,7 +124,7 @@ export const ApplicationListPage = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = useCallback(async () => {
     if (!deleteId) return;
     try {
       await deleteApplication(deleteId);
@@ -134,7 +136,7 @@ export const ApplicationListPage = () => {
       setDeleteDialogOpen(false);
       setDeleteId(null);
     }
-  };
+  }, [deleteId, fetchApplications]);
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -155,7 +157,7 @@ export const ApplicationListPage = () => {
     setExportAnchorEl(null);
   };
 
-  const convertToCSV = (data: Application[]): string => {
+  const convertToCSV = useCallback((data: Application[]): string => {
     if (!data.length) return '';
     const headers = [
       'Company', 'Position', 'Status', 'Applied Date', 'Source',
@@ -183,9 +185,9 @@ export const ApplicationListPage = () => {
     const headerLine = headers.map(h => escape(h)).join(',');
     const rowLines = rows.map(row => row.map(cell => escape(String(cell))).join(','));
     return [headerLine, ...rowLines].join('\n');
-  };
+  }, []);
 
-  const handleExport = async (format: 'csv' | 'json') => {
+  const handleExport = useCallback(async (format: 'csv' | 'json') => {
     try {
       // Fetch all applications (with a high limit)
       const allApps = await getApplications({ limit: 10000 });
@@ -211,7 +213,7 @@ export const ApplicationListPage = () => {
       setError(err.message || 'Failed to export data');
     }
     handleExportClose();
-  };
+  }, [convertToCSV]);
 
   return (
     <>
@@ -221,14 +223,14 @@ export const ApplicationListPage = () => {
             CRM Smart Tracker
           </Typography>
           <ThemeToggle />
-          <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />}>
-            Dashboard
+          <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />} sx={{ ml: 1 }}>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Dashboard</Box>
           </Button>
-          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />}>
-            Logout
+          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />} sx={{ ml: 1 }}>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
           </Button>
-          <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick}>
-            Export
+          <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick} sx={{ ml: 1 }}>
+            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Export</Box>
           </Button>
           <Menu
             anchorEl={exportAnchorEl}
@@ -270,9 +272,9 @@ export const ApplicationListPage = () => {
               value={search}
               onChange={handleSearchChange}
               size="small"
-              sx={{ minWidth: 200 }}
+              sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}
             />
-            <FormControl size="small" sx={{ minWidth: 200 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
               <InputLabel>Status</InputLabel>
               <Select
                 multiple
@@ -294,7 +296,7 @@ export const ApplicationListPage = () => {
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
               <InputLabel>Source</InputLabel>
               <Select
                 value={sourceFilter}
@@ -309,7 +311,7 @@ export const ApplicationListPage = () => {
                 ))}
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
               <InputLabel>Sort By</InputLabel>
               <Select
                 value={sortBy}
@@ -321,7 +323,7 @@ export const ApplicationListPage = () => {
                 <MenuItem value="salaryMax">Salary Max</MenuItem>
               </Select>
             </FormControl>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 100 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
               <InputLabel>Order</InputLabel>
               <Select
                 value={sortOrder}
@@ -332,7 +334,7 @@ export const ApplicationListPage = () => {
                 <MenuItem value="desc">Desc</MenuItem>
               </Select>
             </FormControl>
-            <Button variant="outlined" onClick={handleResetFilters}>
+            <Button variant="outlined" onClick={handleResetFilters} sx={{ flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
               Reset Filters
             </Button>
           </Box>
@@ -362,4 +364,6 @@ export const ApplicationListPage = () => {
       </Container>
     </>
   );
-};
+});
+
+export default ApplicationListPage;

@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 
-export const RegisterPage = () => {
+const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const [email, setEmail] = useState('');
@@ -103,3 +103,5 @@ export const RegisterPage = () => {
     </Container>
   );
 };
+
+export default RegisterPage;
