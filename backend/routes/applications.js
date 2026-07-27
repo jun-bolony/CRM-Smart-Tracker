@@ -6,7 +6,8 @@ const {
   getApplicationById,
   createApplication,
   updateApplication,
-  deleteApplication
+  deleteApplication,
+  createBulkApplications   // NEW
 } = require('../controllers/applications');
 
 // Middleware for checking the validity of ObjectId (can be moved to a separate middleware)
@@ -28,5 +29,8 @@ router.post('/', createApplication);
 router.get('/:id', validateId, getApplicationById);
 router.put('/:id', validateId, updateApplication);
 router.delete('/:id', validateId, deleteApplication);
+
+// NEW: Bulk create
+router.post('/bulk', createBulkApplications);
 
 module.exports = router;

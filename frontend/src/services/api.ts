@@ -49,8 +49,7 @@ apiClient.interceptors.response.use(
   }
 );
 
-// CRUD functions remain the same, but they now include token automatically
-
+// CRUD functions
 export const getApplications = (params?: ApplicationQueryParams): Promise<Application[]> => {
   return apiClient.get('/api/applications', { params });
 };
@@ -82,4 +81,14 @@ export const login = (email: string, password: string): Promise<{ token: string;
 
 export const register = (email: string, password: string): Promise<{ token: string; email: string }> => {
   return apiClient.post('/api/auth/register', { email, password });
+};
+
+// --- Sources and bulk import ---
+// FIXED: Correct endpoint is '/api/stats/sources' (not '/api/sources')
+export const getSources = (): Promise<string[]> => {
+  return apiClient.get('/api/stats/sources');
+};
+
+export const bulkCreateApplications = (applications: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>[]): Promise<Application[]> => {
+  return apiClient.post('/api/applications/bulk', { applications });
 };

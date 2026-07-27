@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -17,7 +17,7 @@ import {
   ListItem,
   ListItemText,
 } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, GetApp, CloudUpload } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types/Application';
 import { getApplication, updateApplication } from '../services/api';
@@ -58,6 +58,9 @@ const ApplicationDetailPage = () => {
   // For status change
   const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus | ''>('');
 
+  // Import file input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const loadApplication = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -80,7 +83,7 @@ const ApplicationDetailPage = () => {
   const handleStatusChange = async (event: SelectChangeEvent<ApplicationStatus>) => {
     const newStatus = event.target.value as ApplicationStatus;
     if (!application) return;
-    if (newStatus === application.status) return; // no change
+    if (newStatus === application.status) return;
 
     try {
       const updated = await updateApplication(application._id!, { status: newStatus });
@@ -117,6 +120,43 @@ const ApplicationDetailPage = () => {
     });
   };
 
+  // Export current application
+  const handleExport = () => {
+    if (!application) return;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const blob = new Blob([JSON.stringify(application, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `application_${application.company}_${application.position}_${timestamp}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Import current application
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !application) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      // Remove statusHistory to avoid conflict with server's $push
+      delete data.statusHistory;
+      const updated = await updateApplication(application._id!, data);
+      setApplication(updated);
+      setSelectedStatus(updated.status);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to import application');
+    } finally {
+      event.target.value = '';
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -134,9 +174,26 @@ const ApplicationDetailPage = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Button onClick={handleBack} startIcon={<ArrowBack />} sx={{ mb: 2 }}>
-        Back to list
-      </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Button onClick={handleBack} startIcon={<ArrowBack />}>
+          Back to list
+        </Button>
+        <Box>
+          <Button startIcon={<GetApp />} onClick={handleExport} sx={{ mr: 1 }}>
+            Export
+          </Button>
+          <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
+            Import
+          </Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".json"
+            onChange={handleImportFileChange}
+          />
+        </Box>
+      </Box>
 
       <Paper sx={{ p: 3 }}>
         {/* Header */}
@@ -256,6 +313,7 @@ const ApplicationDetailPage = () => {
               onChange={(e) => setNewNote(e.target.value)}
               fullWidth
               size="small"
+              slotProps={{ inputLabel: { shrink: true } }}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();

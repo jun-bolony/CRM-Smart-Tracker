@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container } from '@mui/material';
+import { Container, Button } from '@mui/material'; // removed Box
+import { ArrowBack } from '@mui/icons-material';
 import type { Application } from '../types/Application';
 import { getApplication, createApplication, updateApplication } from '../services/api';
 import { ApplicationForm } from '../components/ApplicationForm';
@@ -21,6 +22,10 @@ const ApplicationFormPage = () => {
       const loadApplication = async () => {
         try {
           const data = await getApplication(id);
+          // Ensure source is always a string (empty if missing)
+          if (data.source === undefined) {
+            data.source = '';
+          }
           setInitialData(data);
         } catch (err: any) {
           setError(err.message || 'Failed to load application');
@@ -30,7 +35,7 @@ const ApplicationFormPage = () => {
       };
       loadApplication();
     } else {
-      setInitialData({});
+      setInitialData({ source: '' }); // default source to empty string
       setLoading(false);
     }
   }, [id, isEdit]);
@@ -39,11 +44,16 @@ const ApplicationFormPage = () => {
     data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
   ) => {
     setError(null);
+    // Ensure source is always a string
+    const payload = {
+      ...data,
+      source: data.source || '',
+    };
     try {
       if (isEdit && id) {
-        await updateApplication(id, data);
+        await updateApplication(id, payload);
       } else {
-        await createApplication(data);
+        await createApplication(payload);
       }
       navigate('/');
     } catch (err: any) {
@@ -61,6 +71,15 @@ const ApplicationFormPage = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
+      {/* Back button at top */}
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={handleCancel}
+        sx={{ mb: 2 }}
+      >
+        Back
+      </Button>
+
       <ApplicationForm
         initialData={initialData || undefined}
         onSubmit={handleSubmit}

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useRef } from 'react';
 import {
   Table,
   TableBody,
@@ -10,8 +10,9 @@ import {
   Chip,
   IconButton,
   Box,
+  Tooltip,
 } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import { Edit, Delete, GetApp, CloudUpload } from '@mui/icons-material';
 import type { Application, ApplicationStatus } from '../types/Application';
 
 const statusColorMap: Record<ApplicationStatus, 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'> = {
@@ -29,6 +30,8 @@ interface ApplicationTableProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onRowClick?: (id: string) => void;
+  onExportSingle: (id: string) => void;
+  onImportSingle: (id: string, file: File) => void;
 }
 
 const ApplicationTable = memo(({
@@ -36,11 +39,28 @@ const ApplicationTable = memo(({
   onEdit,
   onDelete,
   onRowClick,
+  onExportSingle,
+  onImportSingle,
 }: ApplicationTableProps) => {
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
   const formatDate = (date?: Date | string) => {
     if (!date) return '-';
     const d = new Date(date);
     return d.toLocaleDateString('en-US');
+  };
+
+  const handleImportChange = (id: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      onImportSingle(id, file);
+    }
+    event.target.value = '';
+  };
+
+  const handleImportClick = (id: string) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fileInputRefs.current[id]?.click();
   };
 
   return (
@@ -77,26 +97,57 @@ const ApplicationTable = memo(({
               <TableCell>{formatDate(app.nextEventDate)}</TableCell>
               <TableCell align="right">
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (app._id) onEdit(app._id);
-                    }}
-                  >
-                    <Edit fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (app._id) onDelete(app._id);
-                    }}
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
+                  <Tooltip title="Edit">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (app._id) onEdit(app._id);
+                      }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Delete">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (app._id) onDelete(app._id);
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Export as JSON">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (app._id) onExportSingle(app._id);
+                      }}
+                    >
+                      <GetApp fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Import from JSON">
+                    <IconButton
+                      size="small"
+                      component="span"
+                      onClick={handleImportClick(app._id!)}
+                    >
+                      <CloudUpload fontSize="small" />
+                      <input
+                        type="file"
+                        accept=".json"
+                        ref={(el) => { fileInputRefs.current[app._id!] = el; }}
+                        style={{ display: 'none' }}
+                        onChange={handleImportChange(app._id!)}
+                      />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </TableCell>
             </TableRow>

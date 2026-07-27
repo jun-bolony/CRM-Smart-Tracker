@@ -6,7 +6,7 @@ exports.getStats = async (req, res, next) => {
     console.log('[getStats] Fetching statistics...');
 
     const statuses = ['Sent', 'Viewed', 'Interview', 'Test', 'Offer', 'Rejected', 'Archived'];
-    const userId = req.userId; // <-- ADDED
+    const userId = req.userId;
 
     const [
       statusDistribution,
@@ -17,25 +17,25 @@ exports.getStats = async (req, res, next) => {
       funnelCounts
     ] = await Promise.all([
       Application.aggregate([
-        { $match: { userId: userId } }, // <-- ADDED
+        { $match: { userId: userId } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $project: { status: '$_id', count: 1, _id: 0 } }
       ]),
       Application.aggregate([
-        { $match: { userId: userId, appliedDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } }, // <-- ADDED userId
+        { $match: { userId: userId, appliedDate: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } },
         { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$appliedDate' } }, count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
       ]),
       Application.aggregate([
-        { $match: { userId: userId, source: { $ne: null, $ne: '' } } }, // <-- ADDED userId
+        { $match: { userId: userId, source: { $ne: null, $ne: '' } } },
         { $group: { _id: '$source', count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 5 }
       ]),
-      Application.countDocuments({ userId: userId }), // <-- ADDED
-      Application.countDocuments({ userId: userId, status: 'Offer' }), // <-- ADDED
+      Application.countDocuments({ userId: userId }),
+      Application.countDocuments({ userId: userId, status: 'Offer' }),
       Promise.all(statuses.map(status =>
-        Application.countDocuments({ userId: userId, 'statusHistory.status': status }) // <-- ADDED userId
+        Application.countDocuments({ userId: userId, 'statusHistory.status': status })
       ))
     ]);
 
@@ -58,6 +58,18 @@ exports.getStats = async (req, res, next) => {
     res.status(200).json({ success: true, data });
   } catch (err) {
     console.error('[getStats] Error:', err);
+    next(err);
+  }
+};
+
+// Get distinct sources for current user
+exports.getSources = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const sources = await Application.distinct('source', { userId: userId, source: { $ne: null, $ne: '' } });
+    res.status(200).json({ success: true, data: sources });
+  } catch (err) {
+    console.error('[getSources] Error:', err);
     next(err);
   }
 };

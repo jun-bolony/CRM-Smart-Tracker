@@ -29,11 +29,17 @@ exports.getAllApplications = async (req, res, next) => {
       }
     }
 
+    // Support multiple sources (comma-separated)
     if (source) {
-      const sourceTrimmed = source.trim();
-      if (sourceTrimmed) {
-        filter.source = sourceTrimmed;
-        console.log('[getAllApplications] Source filter:', sourceTrimmed);
+      let sourceArray;
+      if (Array.isArray(source)) {
+        sourceArray = source;
+      } else {
+        sourceArray = source.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      }
+      if (sourceArray.length > 0) {
+        filter.source = { $in: sourceArray };
+        console.log('[getAllApplications] Source filter:', sourceArray);
       }
     }
 
@@ -120,10 +126,14 @@ exports.createApplication = async (req, res, next) => {
 };
 
 // Update application, automatically adding status change to history (without automatic note)
+// Also explicitly ignores 'statusHistory' from the request body to avoid conflicts with $push
 exports.updateApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    // Remove statusHistory from updateData to prevent conflict with $push
+    delete updateData.statusHistory;
 
     const existing = await Application.findOne({ _id: id, userId: req.userId });
     if (!existing) {
@@ -180,6 +190,37 @@ exports.deleteApplication = async (req, res, next) => {
     }
     res.status(200).json(formatResponse(true, null, 'Application deleted successfully'));
   } catch (err) {
+    next(err);
+  }
+};
+
+// Bulk create applications
+exports.createBulkApplications = async (req, res, next) => {
+  try {
+    const { applications } = req.body;
+    if (!Array.isArray(applications)) {
+      return res.status(400).json(formatResponse(false, null, 'Expected array of applications'));
+    }
+
+    const created = [];
+    for (const data of applications) {
+      if (!data.company || !data.position) {
+        continue; // skip invalid, or throw error – we'll throw
+      }
+      const newApp = new Application({
+        ...data,
+        userId: req.userId,
+        statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }]
+      });
+      const saved = await newApp.save();
+      created.push(saved);
+    }
+    res.status(201).json(formatResponse(true, created));
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      const messages = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json(formatResponse(false, null, messages.join(', ')));
+    }
     next(err);
   }
 };
