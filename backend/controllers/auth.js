@@ -47,7 +47,10 @@ exports.register = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    res.status(201).json(formatResponse(true, { token, email: newUser.email }));
+    res.status(201).json(formatResponse(true, {
+      token,
+      email: newUser.email,
+    }));
   } catch (err) {
     next(err);
   }
@@ -81,7 +84,10 @@ exports.login = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    res.status(200).json(formatResponse(true, { token, email: user.email }));
+    res.status(200).json(formatResponse(true, {
+      token,
+      email: user.email,
+    }));
   } catch (err) {
     next(err);
   }

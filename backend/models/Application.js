@@ -23,7 +23,7 @@ const statusHistoryItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 const applicationSchema = new mongoose.Schema({
-  userId: { type: String, index: true }, // reserved for authentication
+  userId: { type: String, index: true },
   company: { type: String, required: true, trim: true },
   position: { type: String, required: true, trim: true },
   url: { type: String, trim: true },
@@ -42,7 +42,7 @@ const applicationSchema = new mongoose.Schema({
   notes: { type: [String], default: [] },
   statusHistory: { type: [statusHistoryItemSchema], default: [] }
 }, {
-  timestamps: true // automatically adds createdAt and updatedAt
+  timestamps: true
 });
 
 // Indexes for fast searching

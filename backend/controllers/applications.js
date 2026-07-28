@@ -1,20 +1,16 @@
 // backend/controllers/applications.js
 const Application = require('../models/Application');
 
-// Helper function for formatting the response
 const formatResponse = (success, data = null, message = '') => ({
   success,
   data,
-  message
+  message,
 });
 
-// Get all applications with filtering, sorting, search and pagination
 exports.getAllApplications = async (req, res, next) => {
   try {
     const { status, source, search, sortBy, sortOrder, page, limit } = req.query;
     const filter = { userId: req.userId };
-
-    console.log('[getAllApplications] Query params:', { status, source, search, sortBy, sortOrder, page, limit });
 
     if (status) {
       let statusArray;
@@ -25,11 +21,9 @@ exports.getAllApplications = async (req, res, next) => {
       }
       if (statusArray.length > 0) {
         filter.status = { $in: statusArray };
-        console.log('[getAllApplications] Status filter:', statusArray);
       }
     }
 
-    // Support multiple sources (comma-separated)
     if (source) {
       let sourceArray;
       if (Array.isArray(source)) {
@@ -39,7 +33,6 @@ exports.getAllApplications = async (req, res, next) => {
       }
       if (sourceArray.length > 0) {
         filter.source = { $in: sourceArray };
-        console.log('[getAllApplications] Source filter:', sourceArray);
       }
     }
 
@@ -48,9 +41,8 @@ exports.getAllApplications = async (req, res, next) => {
       if (searchTrimmed) {
         filter.$or = [
           { company: { $regex: searchTrimmed, $options: 'i' } },
-          { position: { $regex: searchTrimmed, $options: 'i' } }
+          { position: { $regex: searchTrimmed, $options: 'i' } },
         ];
-        console.log('[getAllApplications] Search filter:', searchTrimmed);
       }
     }
 
@@ -61,29 +53,22 @@ exports.getAllApplications = async (req, res, next) => {
     } else {
       sort.createdAt = -1;
     }
-    console.log('[getAllApplications] Sort:', sort);
 
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 100;
     const skip = (pageNum - 1) * limitNum;
-
-    console.log('[getAllApplications] Final filter:', JSON.stringify(filter));
 
     const applications = await Application.find(filter)
       .sort(sort)
       .skip(skip)
       .limit(limitNum);
 
-    console.log(`[getAllApplications] Found ${applications.length} applications`);
-
     res.status(200).json(formatResponse(true, applications));
   } catch (err) {
-    console.error('[getAllApplications] Error:', err);
     next(err);
   }
 };
 
-// Get one application by ID
 exports.getApplicationById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -97,11 +82,9 @@ exports.getApplicationById = async (req, res, next) => {
   }
 };
 
-// Create a new application with initial status history
 exports.createApplication = async (req, res, next) => {
   try {
     const data = req.body;
-
     if (!data.company || !data.position) {
       return res.status(400).json(
         formatResponse(false, null, 'Company and position are required')
@@ -113,7 +96,6 @@ exports.createApplication = async (req, res, next) => {
       userId: req.userId,
     });
     newApp.statusHistory = [{ status: newApp.status, changedAt: new Date() }];
-    console.log('[createApplication] Initial statusHistory:', newApp.statusHistory);
     const saved = await newApp.save();
     res.status(201).json(formatResponse(true, saved));
   } catch (err) {
@@ -125,14 +107,11 @@ exports.createApplication = async (req, res, next) => {
   }
 };
 
-// Update application, automatically adding status change to history (without automatic note)
-// Also explicitly ignores 'statusHistory' from the request body to avoid conflicts with $push
 exports.updateApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Remove statusHistory from updateData to prevent conflict with $push
     delete updateData.statusHistory;
 
     const existing = await Application.findOne({ _id: id, userId: req.userId });
@@ -142,13 +121,11 @@ exports.updateApplication = async (req, res, next) => {
 
     const updateOperations = {};
 
-    // Handle status change separately – add to statusHistory, but do NOT auto-add a note
     if (updateData.status && updateData.status !== existing.status) {
       updateOperations['$push'] = {
-        statusHistory: { status: updateData.status, changedAt: new Date() }
+        statusHistory: { status: updateData.status, changedAt: new Date() },
       };
       updateOperations['$set'] = { status: updateData.status };
-      console.log('[updateApplication] Status changed from', existing.status, 'to', updateData.status);
     } else {
       updateOperations['$set'] = {};
     }
@@ -169,7 +146,6 @@ exports.updateApplication = async (req, res, next) => {
       { new: true, runValidators: true }
     );
 
-    console.log('[updateApplication] Updated statusHistory length:', updated.statusHistory.length);
     res.status(200).json(formatResponse(true, updated));
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -180,7 +156,6 @@ exports.updateApplication = async (req, res, next) => {
   }
 };
 
-// Delete the application
 exports.deleteApplication = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -194,7 +169,6 @@ exports.deleteApplication = async (req, res, next) => {
   }
 };
 
-// Bulk create applications
 exports.createBulkApplications = async (req, res, next) => {
   try {
     const { applications } = req.body;
@@ -205,12 +179,12 @@ exports.createBulkApplications = async (req, res, next) => {
     const created = [];
     for (const data of applications) {
       if (!data.company || !data.position) {
-        continue; // skip invalid, or throw error – we'll throw
+        continue;
       }
       const newApp = new Application({
         ...data,
         userId: req.userId,
-        statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }]
+        statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }],
       });
       const saved = await newApp.save();
       created.push(saved);

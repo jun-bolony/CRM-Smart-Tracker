@@ -9,7 +9,6 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add token
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -21,7 +20,6 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle 401 and extract data
 apiClient.interceptors.response.use(
   (response) => {
     if (response.data && typeof response.data === 'object' && 'success' in response.data) {
@@ -34,11 +32,9 @@ apiClient.interceptors.response.use(
     return response.data;
   },
   (error: AxiosError) => {
-    // Handle 401 Unauthorized - clear token and redirect
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Redirect to login (we'll handle it via event or simply reload)
       window.location.href = '/login';
     }
     const message =
@@ -49,7 +45,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-// CRUD functions
 export const getApplications = (params?: ApplicationQueryParams): Promise<Application[]> => {
   return apiClient.get('/api/applications', { params });
 };
@@ -74,7 +69,6 @@ export const getStats = (): Promise<StatsData> => {
   return apiClient.get('/api/stats');
 };
 
-// Auth API functions
 export const login = (email: string, password: string): Promise<{ token: string; email: string }> => {
   return apiClient.post('/api/auth/login', { email, password });
 };
@@ -83,8 +77,6 @@ export const register = (email: string, password: string): Promise<{ token: stri
   return apiClient.post('/api/auth/register', { email, password });
 };
 
-// --- Sources and bulk import ---
-// FIXED: Correct endpoint is '/api/stats/sources' (not '/api/sources')
 export const getSources = (): Promise<string[]> => {
   return apiClient.get('/api/stats/sources');
 };

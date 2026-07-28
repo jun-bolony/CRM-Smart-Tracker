@@ -16,13 +16,18 @@ import {
   List,
   ListItem,
   ListItemText,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
-import { ArrowBack, GetApp, CloudUpload } from '@mui/icons-material';
+import { ArrowBack, GetApp, CloudUpload, Edit, Delete } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types/Application';
-import { getApplication, updateApplication } from '../services/api';
+import { getApplication, updateApplication, deleteApplication } from '../services/api';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
+import { saveFileWithPicker } from '../utils/fileUtils';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -51,14 +56,12 @@ const ApplicationDetailPage = () => {
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
 
-  // For adding notes
   const [newNote, setNewNote] = useState<string>('');
-
-  // For status change
   const [selectedStatus, setSelectedStatus] = useState<ApplicationStatus | ''>('');
 
-  // Import file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadApplication = useCallback(async () => {
@@ -111,6 +114,30 @@ const ApplicationDetailPage = () => {
     navigate('/');
   };
 
+  const handleEdit = () => {
+    if (id) navigate(`/edit/${id}`);
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!id) return;
+    try {
+      await deleteApplication(id);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete application');
+    } finally {
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
   const formatDate = (date?: Date | string) => {
     if (!date) return '-';
     const d = new Date(date);
@@ -120,20 +147,21 @@ const ApplicationDetailPage = () => {
     });
   };
 
-  // Export current application
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!application) return;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const blob = new Blob([JSON.stringify(application, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `application_${application.company}_${application.position}_${timestamp}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const blob = new Blob([JSON.stringify(application, null, 2)], { type: 'application/json' });
+      const suggestedName = `application_${application.company}_${application.position}_${timestamp}.json`;
+      const result = await saveFileWithPicker(blob, suggestedName, 'application/json');
+      if (result.success) {
+        setSuccessMessage(`Application exported successfully as ${result.fileName || suggestedName}`);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to export application');
+    }
   };
 
-  // Import current application
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
@@ -144,11 +172,11 @@ const ApplicationDetailPage = () => {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      // Remove statusHistory to avoid conflict with server's $push
       delete data.statusHistory;
       const updated = await updateApplication(application._id!, data);
       setApplication(updated);
       setSelectedStatus(updated.status);
+      setSuccessMessage('Application imported successfully');
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to import application');
@@ -179,12 +207,26 @@ const ApplicationDetailPage = () => {
           Back to list
         </Button>
         <Box>
-          <Button startIcon={<GetApp />} onClick={handleExport} sx={{ mr: 1 }}>
-            Export
-          </Button>
-          <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
-            Import
-          </Button>
+          <Tooltip title="Edit this application">
+            <Button startIcon={<Edit />} onClick={handleEdit} sx={{ mr: 1 }}>
+              Edit
+            </Button>
+          </Tooltip>
+          <Tooltip title="Delete this application">
+            <Button startIcon={<Delete />} onClick={handleDeleteClick} color="error" sx={{ mr: 1 }}>
+              Delete
+            </Button>
+          </Tooltip>
+          <Tooltip title="Export this application for backup or sharing.">
+            <Button startIcon={<GetApp />} onClick={handleExport} sx={{ mr: 1 }}>
+              Export
+            </Button>
+          </Tooltip>
+          <Tooltip title="Import from JSON to update this application.">
+            <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
+              Import
+            </Button>
+          </Tooltip>
           <input
             type="file"
             ref={fileInputRef}
@@ -196,7 +238,6 @@ const ApplicationDetailPage = () => {
       </Box>
 
       <Paper sx={{ p: 3 }}>
-        {/* Header */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
             <Typography variant="h4" component="h1">
@@ -215,7 +256,6 @@ const ApplicationDetailPage = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Main information */}
         <Box
           sx={{
             display: 'grid',
@@ -252,12 +292,10 @@ const ApplicationDetailPage = () => {
             <Typography variant="subtitle2" color="text.secondary">Applied Date</Typography>
             <Typography>{formatDate(application.appliedDate)}</Typography>
           </Box>
-          {application.nextEventDate && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">Next Event</Typography>
-              <Typography>{formatDate(application.nextEventDate)}</Typography>
-            </Box>
-          )}
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary">Next Event</Typography>
+            <Typography>{formatDate(application.nextEventDate)}</Typography>
+          </Box>
           {application.contact && (application.contact.name || application.contact.email || application.contact.phone) && (
             <Box sx={{ gridColumn: '1 / -1' }}>
               <Typography variant="subtitle2" color="text.secondary">Contact</Typography>
@@ -272,7 +310,6 @@ const ApplicationDetailPage = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Status change */}
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" gutterBottom>Change Status</Typography>
           <FormControl sx={{ minWidth: 200 }}>
@@ -292,7 +329,6 @@ const ApplicationDetailPage = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Notes */}
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" gutterBottom>Notes</Typography>
           {application.notes && application.notes.length > 0 ? (
@@ -329,7 +365,6 @@ const ApplicationDetailPage = () => {
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Status History */}
         <Box>
           <Typography variant="h6" gutterBottom>Status History</Typography>
           {application.statusHistory && application.statusHistory.length > 0 ? (
@@ -362,6 +397,23 @@ const ApplicationDetailPage = () => {
         open={!!error}
         message={error || ''}
         onClose={() => setError(null)}
+      />
+
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={5000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        onClose={handleDeleteCancel}
       />
     </Container>
   );

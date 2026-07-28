@@ -121,7 +121,7 @@ const ApplicationTable = memo(({
                       <Delete fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Export as JSON">
+                  <Tooltip title="Export this application for backup or sharing.">
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -132,7 +132,7 @@ const ApplicationTable = memo(({
                       <GetApp fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Import from JSON">
+                  <Tooltip title="Import from JSON to update this application.">
                     <IconButton
                       size="small"
                       component="span"

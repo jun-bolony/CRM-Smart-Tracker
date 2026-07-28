@@ -8,17 +8,20 @@ import {
   CardContent,
   CircularProgress,
   Button,
-  // IconButton removed
+  Tooltip,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { ArrowBack, GetApp as DownloadIcon } from '@mui/icons-material';
 import type { StatsData } from '../types/Application';
 import { getStats } from '../services/api';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
   ResponsiveContainer, FunnelChart, Funnel, LabelList,
 } from 'recharts';
 import html2canvas from 'html2canvas';
+import { saveFileWithPicker } from '../utils/fileUtils';
 
 const statusColors: Record<string, string> = {
   Sent: '#2196f3',
@@ -37,6 +40,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,10 +64,16 @@ const Dashboard = () => {
         scale: 2,
         backgroundColor: '#ffffff',
       });
-      const link = document.createElement('a');
-      link.download = `dashboard_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/png')
+      );
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const suggestedName = `dashboard_${timestamp}.png`;
+      const result = await saveFileWithPicker(blob, suggestedName, 'image/png');
+      if (result.success) {
+        setSuccessMessage(`Dashboard saved successfully as ${result.fileName || suggestedName}`);
+      }
+      // If cancelled, do nothing
     } catch (err) {
       setError('Failed to save image');
     }
@@ -95,13 +105,15 @@ const Dashboard = () => {
         <Button startIcon={<ArrowBack />} onClick={() => navigate('/')}>
           Back
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<DownloadIcon />}
-          onClick={handleSaveAsImage}
-        >
-          Save as Image
-        </Button>
+        <Tooltip title="Save the entire dashboard as a PNG image for backup or sharing.">
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleSaveAsImage}
+          >
+            Save as Image
+          </Button>
+        </Tooltip>
       </Box>
 
       <Typography variant="h4" gutterBottom>
@@ -151,7 +163,7 @@ const Dashboard = () => {
                     <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <RechartsTooltip />
               </PieChart>
             </ResponsiveContainer>
           </Box>
@@ -164,7 +176,7 @@ const Dashboard = () => {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis type="category" dataKey="source" />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Bar dataKey="count" fill="#8884d8">
                     <LabelList dataKey="count" position="right" />
                   </Bar>
@@ -185,7 +197,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip />
+                <RechartsTooltip />
                 <Bar dataKey="count" fill="#82ca9d" />
               </BarChart>
             </ResponsiveContainer>
@@ -200,7 +212,7 @@ const Dashboard = () => {
           {funnel.some(item => item.count > 0) ? (
             <ResponsiveContainer width="100%" height={400}>
               <FunnelChart>
-                <Tooltip />
+                <RechartsTooltip />
                 <Funnel
                   data={funnel}
                   dataKey="count"
@@ -222,6 +234,17 @@ const Dashboard = () => {
         message={error || ''}
         onClose={() => setError(null)}
       />
+
+      <Snackbar
+        open={!!successMessage}
+        autoHideDuration={5000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

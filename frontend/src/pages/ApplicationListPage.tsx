@@ -18,6 +18,7 @@ import {
   Menu,
   Snackbar,
   Alert,
+  Tooltip,
 } from '@mui/material';
 import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon, GetApp as ExportIcon, CloudUpload as ImportIcon } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
@@ -30,6 +31,7 @@ import type { Application, ApplicationStatus, ApplicationQueryParams } from '../
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import Papa from 'papaparse';
+import { saveFileWithPicker } from '../utils/fileUtils';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -40,46 +42,6 @@ const statusOptions: ApplicationStatus[] = [
   'Rejected',
   'Archived',
 ];
-
-// Helper to save file with file picker (if supported) with proper cancel handling
-const saveFileWithPicker = async (blob: Blob, suggestedName: string, mimeType: string): Promise<boolean> => {
-  // Check if File System Access API is available
-  if ('showSaveFilePicker' in window) {
-    try {
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName,
-        types: [
-          {
-            description: mimeType === 'application/json' ? 'JSON file' : 'CSV file',
-            accept: { [mimeType]: ['.' + (mimeType === 'application/json' ? 'json' : 'csv')] },
-          },
-        ],
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return true; // success
-    } catch (err: any) {
-      // User cancelled or error – do NOT fallback to download
-      if (err.name === 'AbortError' || err.message?.includes('abort')) {
-        // User cancelled – silently ignore
-        return false;
-      }
-      // Other error – rethrow to be handled by caller
-      throw err;
-    }
-  }
-  // Fallback: create link and trigger download (no file picker)
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = suggestedName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
-  return true;
-};
 
 const ApplicationListPage = memo(() => {
   const navigate = useNavigate();
@@ -277,9 +239,9 @@ const ApplicationListPage = memo(() => {
         suggestedName = `applications_${timestamp}.csv`;
         mimeType = 'text/csv';
       }
-      const saved = await saveFileWithPicker(blob, suggestedName, mimeType);
-      if (saved) {
-        setSuccessMessage(`File exported successfully as ${suggestedName}`);
+      const result = await saveFileWithPicker(blob, suggestedName, mimeType);
+      if (result.success) {
+        setSuccessMessage(`File exported successfully as ${result.fileName || suggestedName}`);
       }
       // If cancelled, do nothing
     } catch (err: any) {
@@ -459,9 +421,9 @@ const ApplicationListPage = memo(() => {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const blob = new Blob([JSON.stringify(app, null, 2)], { type: 'application/json' });
       const suggestedName = `application_${app.company}_${app.position}_${timestamp}.json`;
-      const saved = await saveFileWithPicker(blob, suggestedName, 'application/json');
-      if (saved) {
-        setSuccessMessage(`Application exported successfully as ${suggestedName}`);
+      const result = await saveFileWithPicker(blob, suggestedName, 'application/json');
+      if (result.success) {
+        setSuccessMessage(`Application exported successfully as ${result.fileName || suggestedName}`);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to export application');
@@ -501,9 +463,11 @@ const ApplicationListPage = memo(() => {
           <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />} sx={{ ml: 1 }}>
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Dashboard</Box>
           </Button>
-          <Button color="inherit" onClick={handleImportClick} startIcon={<ImportIcon />} sx={{ ml: 1 }}>
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Import</Box>
-          </Button>
+          <Tooltip title="Import all applications from CSV/JSON for backup or sharing. Supports updating existing applications by _id or company+position.">
+            <Button color="inherit" onClick={handleImportClick} startIcon={<ImportIcon />} sx={{ ml: 1 }}>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Import</Box>
+            </Button>
+          </Tooltip>
           <input
             type="file"
             ref={fileInputRef}
@@ -514,9 +478,11 @@ const ApplicationListPage = memo(() => {
           <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />} sx={{ ml: 1 }}>
             <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
           </Button>
-          <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick} sx={{ ml: 1 }}>
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Export</Box>
-          </Button>
+          <Tooltip title="Export all applications as CSV or JSON for backup or sharing.">
+            <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick} sx={{ ml: 1 }}>
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Export</Box>
+            </Button>
+          </Tooltip>
           <Menu
             anchorEl={exportAnchorEl}
             open={Boolean(exportAnchorEl)}
@@ -596,11 +562,17 @@ const ApplicationListPage = memo(() => {
                   </Box>
                 )}
               >
-                {sourceOptions.map((src) => (
-                  <MenuItem key={src} value={src}>
-                    {src}
+                {sourceOptions.length === 0 ? (
+                  <MenuItem disabled>
+                    No sources available. Please add sources to your applications.
                   </MenuItem>
-                ))}
+                ) : (
+                  sourceOptions.map((src) => (
+                    <MenuItem key={src} value={src}>
+                      {src}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
             <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>

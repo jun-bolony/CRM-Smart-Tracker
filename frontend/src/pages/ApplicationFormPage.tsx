@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Button } from '@mui/material'; // removed Box
+import { Container, Button } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import type { Application } from '../types/Application';
 import { getApplication, createApplication, updateApplication } from '../services/api';
@@ -22,10 +22,8 @@ const ApplicationFormPage = () => {
       const loadApplication = async () => {
         try {
           const data = await getApplication(id);
-          // Ensure source is always a string (empty if missing)
-          if (data.source === undefined) {
-            data.source = '';
-          }
+          // Ensure fields are always present
+          if (data.source === undefined) data.source = '';
           setInitialData(data);
         } catch (err: any) {
           setError(err.message || 'Failed to load application');
@@ -35,7 +33,7 @@ const ApplicationFormPage = () => {
       };
       loadApplication();
     } else {
-      setInitialData({ source: '' }); // default source to empty string
+      setInitialData({ source: '' });
       setLoading(false);
     }
   }, [id, isEdit]);
@@ -44,7 +42,6 @@ const ApplicationFormPage = () => {
     data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>
   ) => {
     setError(null);
-    // Ensure source is always a string
     const payload = {
       ...data,
       source: data.source || '',
@@ -71,7 +68,6 @@ const ApplicationFormPage = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      {/* Back button at top */}
       <Button
         startIcon={<ArrowBack />}
         onClick={handleCancel}
