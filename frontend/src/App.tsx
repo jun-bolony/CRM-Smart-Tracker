@@ -1,13 +1,13 @@
+// frontend/src/App.tsx
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline, Box, GlobalStyles } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider as CustomThemeProvider, useThemeContext } from './context/ThemeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GlobalNavBar } from './components/GlobalNavBar';
 
-// Lazy load pages
 const ApplicationListPage = lazy(() => import('./pages/ApplicationListPage'));
 const ApplicationFormPage = lazy(() => import('./pages/ApplicationFormPage'));
 const ApplicationDetailPage = lazy(() => import('./pages/ApplicationDetailPage'));
@@ -15,26 +15,77 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 
+const AppRoutes = () => {
+  const location = useLocation();
+  const hideNav = location.pathname === '/login' || location.pathname === '/register';
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
+      {!hideNav && <GlobalNavBar />}
+      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/" element={<ProtectedRoute><ApplicationListPage /></ProtectedRoute>} />
+            <Route path="/new" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
+            <Route path="/edit/:id" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
+            <Route path="/detail/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          </Routes>
+        </Suspense>
+      </Box>
+    </Box>
+  );
+};
+
 const AppContent = () => {
-  const { mode } = useThemeContext();
-  const theme = createTheme({ palette: { mode } });
+  // Using a static theme as toggle functionality is removed
+  const theme = createTheme({ palette: { mode: 'light' } });
 
   return (
     <MuiThemeProvider theme={theme}>
       <CssBaseline />
+      <GlobalStyles
+        styles={{
+          'html, body': {
+            margin: 0,
+            padding: 0,
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+          },
+          '#root': {
+            width: '100%',
+            height: '100%',
+            margin: 0,
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          },
+          '.table-scroll-container': {
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#c1c1c1 transparent',
+          },
+          '.table-scroll-container::-webkit-scrollbar': {
+            width: '6px',
+            height: '6px',
+          },
+          '.table-scroll-container::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '.table-scroll-container::-webkit-scrollbar-thumb': {
+            background: '#c1c1c1',
+            borderRadius: '3px',
+          },
+          '.table-scroll-container::-webkit-scrollbar-thumb:hover': {
+            background: '#a8a8a8',
+          },
+        }}
+      />
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<LoadingSpinner fullScreen />}>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/" element={<ProtectedRoute><ApplicationListPage /></ProtectedRoute>} />
-              <Route path="/new" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
-              <Route path="/edit/:id" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
-              <Route path="/detail/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            </Routes>
-          </Suspense>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </MuiThemeProvider>
@@ -43,11 +94,9 @@ const AppContent = () => {
 
 function App() {
   return (
-    <CustomThemeProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
-    </CustomThemeProvider>
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
   );
 }
 

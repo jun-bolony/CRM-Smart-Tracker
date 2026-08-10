@@ -25,7 +25,7 @@ const statusOptions: ApplicationStatus[] = [
 
 interface ApplicationFormProps {
   initialData?: Partial<Application>;
-  onSubmit: (data: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>) => void;
+  onSubmit: (data: Partial<Application>) => void;
   onCancel: () => void;
   isEdit?: boolean;
 }
@@ -69,8 +69,8 @@ const ApplicationForm = memo(({
           email: initialData.contact?.email || '',
           phone: initialData.contact?.phone || '',
         },
-        salaryMin: initialData.salaryMin,
-        salaryMax: initialData.salaryMax,
+        salaryMin: initialData.salaryMin, // keep as is (0 is valid)
+        salaryMax: initialData.salaryMax, // keep as is (0 is valid)
         source: initialData.source || '',
         status: initialData.status || 'Sent',
         appliedDate: applied,
@@ -127,11 +127,13 @@ const ApplicationForm = memo(({
         },
         url: formData.url || undefined,
         source: formData.source || undefined,
-        salaryMin: formData.salaryMin || undefined,
-        salaryMax: formData.salaryMax || undefined,
+        // Salary fields – keep as is (may be null, number, or undefined)
+        salaryMin: formData.salaryMin,
+        salaryMax: formData.salaryMax,
         notes: formData.notes?.length ? formData.notes : undefined,
       };
-      onSubmit(dataToSend);
+      // Cast to any to avoid type issues with null values (parent expects Partial<Application>)
+      onSubmit(dataToSend as any);
     }
   };
 
@@ -202,7 +204,13 @@ const ApplicationForm = memo(({
               label="Salary Min"
               type="number"
               value={formData.salaryMin ?? ''}
-              onChange={(e) => handleChange('salaryMin', e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Empty string -> null (clear field), otherwise try to parse number
+                const parsed = value === '' ? null : Number(value);
+                // If parsed is NaN, treat as null
+                handleChange('salaryMin', (parsed !== null && !isNaN(parsed)) ? parsed : null);
+              }}
             />
           </Box>
           <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
@@ -211,7 +219,11 @@ const ApplicationForm = memo(({
               label="Salary Max"
               type="number"
               value={formData.salaryMax ?? ''}
-              onChange={(e) => handleChange('salaryMax', e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) => {
+                const value = e.target.value;
+                const parsed = value === '' ? null : Number(value);
+                handleChange('salaryMax', (parsed !== null && !isNaN(parsed)) ? parsed : null);
+              }}
             />
           </Box>
           <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>

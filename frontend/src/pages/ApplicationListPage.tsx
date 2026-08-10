@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Typography,
   Button,
   Box,
   TextField,
@@ -12,26 +10,31 @@ import {
   InputLabel,
   Chip,
   OutlinedInput,
-  AppBar,
-  Toolbar,
   Paper,
   Menu,
   Snackbar,
   Alert,
   Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Dashboard as DashboardIcon, Logout as LogoutIcon, GetApp as ExportIcon, CloudUpload as ImportIcon } from '@mui/icons-material';
+import { 
+  Add as AddIcon, 
+  Dashboard as DashboardIcon, 
+  GetApp as ExportIcon, 
+  CloudUpload as ImportIcon,
+  Window as GridViewIcon,
+  ViewHeadline as ListViewIcon
+} from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
 import { ApplicationTable } from '../components/ApplicationTable';
+import { ApplicationCardList } from '../components/ApplicationCardList';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
 import { getApplications, deleteApplication, createApplication, updateApplication } from '../services/api';
 import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
-import { useAuth } from '../context/AuthContext';
-import { ThemeToggle } from '../components/ThemeToggle';
 import Papa from 'papaparse';
 import { saveFileWithPicker } from '../utils/fileUtils';
+import { DragDropImport } from '../components/DragDropImport';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -43,35 +46,49 @@ const statusOptions: ApplicationStatus[] = [
   'Archived',
 ];
 
+const filterInputSx = {
+  background: 'linear-gradient(0deg, #f5f5f5 0%, #ffffff 100%)',
+  color: 'text.primary',
+  borderRadius: 1,
+  '& .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#9caf9',
+  },
+  '&:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#42a5f5',
+  },
+  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: '#1976d2',
+  },
+};
+
 const ApplicationListPage = memo(() => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Filter state
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'appliedDate' | 'nextEventDate' | 'salaryMax'>('appliedDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-  // Sources options - loaded from existing applications
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
 
-  // Delete dialog
+  // View mode state with localStorage persistence
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
+    return (localStorage.getItem('crm_view_preference') as 'card' | 'list') || 'card';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crm_view_preference', viewMode);
+  }, [viewMode]);
+
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-
-  // Export menu
   const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null);
-
-  // Import file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Function to load sources from applications
   const loadSources = useCallback(async () => {
     try {
       const allApps = await getApplications({ limit: 10000 });
@@ -83,16 +100,14 @@ const ApplicationListPage = memo(() => {
       });
       setSourceOptions(Array.from(sourcesSet));
     } catch (err) {
-      console.error('Failed to load sources from applications', err);
+      console.error('Failed to load sources', err);
     }
   }, []);
 
-  // Load sources on mount
   useEffect(() => {
     loadSources();
   }, [loadSources]);
 
-  // Memoize query params
   const queryParams = useMemo<ApplicationQueryParams>(() => ({
     search: search || undefined,
     status: statusFilter.length > 0 ? statusFilter.join(',') : undefined,
@@ -121,28 +136,17 @@ const ApplicationListPage = memo(() => {
     return () => clearTimeout(timer);
   }, [fetchApplications]);
 
-  // Handlers
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-  };
-
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
   const handleStatusChange = (e: SelectChangeEvent<typeof statusFilter>) => {
     const value = e.target.value;
     setStatusFilter(typeof value === 'string' ? value.split(',') : value);
   };
-
   const handleSourceChange = (e: SelectChangeEvent<typeof sourceFilter>) => {
     const value = e.target.value;
     setSourceFilter(typeof value === 'string' ? value.split(',') : value);
   };
-
-  const handleSortByChange = (e: SelectChangeEvent<typeof sortBy>) => {
-    setSortBy(e.target.value as typeof sortBy);
-  };
-
-  const handleSortOrderChange = (e: SelectChangeEvent<typeof sortOrder>) => {
-    setSortOrder(e.target.value as typeof sortOrder);
-  };
+  const handleSortByChange = (e: SelectChangeEvent<typeof sortBy>) => setSortBy(e.target.value as typeof sortBy);
+  const handleSortOrderChange = (e: SelectChangeEvent<typeof sortOrder>) => setSortOrder(e.target.value as typeof sortOrder);
 
   const handleResetFilters = () => {
     setSearch('');
@@ -164,7 +168,7 @@ const ApplicationListPage = memo(() => {
       setDeleteDialogOpen(false);
       setDeleteId(null);
       fetchApplications();
-      loadSources(); // update sources after deletion
+      loadSources();
       setSuccessMessage('Application deleted successfully');
     } catch (err: any) {
       setError(err.message || 'Failed to delete application');
@@ -178,12 +182,6 @@ const ApplicationListPage = memo(() => {
     setDeleteId(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  // Export handlers
   const handleExportClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setExportAnchorEl(event.currentTarget);
   };
@@ -243,177 +241,166 @@ const ApplicationListPage = memo(() => {
       if (result.success) {
         setSuccessMessage(`File exported successfully as ${result.fileName || suggestedName}`);
       }
-      // If cancelled, do nothing
     } catch (err: any) {
       setError(err.message || 'Failed to export data');
     }
     handleExportClose();
   }, [convertToCSV]);
 
-  // --- Import handlers ---
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+  const processImportFiles = useCallback(async (files: FileList) => {
+    if (!files || files.length === 0) return;
 
-  const handleImportFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const text = await file.text();
+        let parsedData: any[] = [];
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const json = JSON.parse(text);
+          parsedData = Array.isArray(json) ? json : [json];
+        } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+          const result = Papa.parse(text, { header: true, skipEmptyLines: true });
+          parsedData = result.data;
+        } else {
+          setError('Unsupported file format. Please upload JSON or CSV.');
+          continue;
+        }
 
-    try {
-      const text = await file.text();
-      let parsedData: any[] = [];
-      if (file.type === 'application/json' || file.name.endsWith('.json')) {
-        const json = JSON.parse(text);
-        parsedData = Array.isArray(json) ? json : [json];
-      } else if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-        const result = Papa.parse(text, { header: true, skipEmptyLines: true });
-        parsedData = result.data;
-      } else {
-        setError('Unsupported file format. Please upload JSON or CSV.');
-        return;
-      }
+        const applicationsToProcess = parsedData.map((item: any) => {
+          const mapped: any = {};
+          const keys = Object.keys(item);
+          keys.forEach(key => {
+            const lowerKey = key.toLowerCase().trim();
+            const value = item[key];
+            if (value === null || value === undefined) return;
 
-      // Convert parsed data to application objects
-      const applicationsToProcess = parsedData.map((item: any) => {
-        const mapped: any = {};
-        const keys = Object.keys(item);
-        keys.forEach(key => {
-          const lowerKey = key.toLowerCase().trim();
-          const value = item[key];
-          if (value === null || value === undefined) return;
+            switch (lowerKey) {
+              case '_id':
+                mapped._id = String(value);
+                break;
+              case 'company':
+                mapped.company = String(value);
+                break;
+              case 'position':
+                mapped.position = String(value);
+                break;
+              case 'status':
+                mapped.status = String(value);
+                break;
+              case 'applieddate':
+              case 'applied date':
+                mapped.appliedDate = value;
+                break;
+              case 'source':
+                mapped.source = String(value);
+                break;
+              case 'salarymin':
+              case 'salary min':
+                mapped.salaryMin = typeof value === 'number' ? value : parseFloat(value) || undefined;
+                break;
+              case 'salarymax':
+              case 'salary max':
+                mapped.salaryMax = typeof value === 'number' ? value : parseFloat(value) || undefined;
+                break;
+              case 'url':
+                mapped.url = String(value);
+                break;
+              case 'contact name':
+                if (!mapped.contact) mapped.contact = {};
+                mapped.contact.name = String(value);
+                break;
+              case 'contact email':
+                if (!mapped.contact) mapped.contact = {};
+                mapped.contact.email = String(value);
+                break;
+              case 'contact phone':
+                if (!mapped.contact) mapped.contact = {};
+                mapped.contact.phone = String(value);
+                break;
+              case 'notes':
+                if (Array.isArray(value)) {
+                  mapped.notes = value.map(v => String(v));
+                } else if (typeof value === 'string') {
+                  mapped.notes = value.split(';').map(s => s.trim()).filter(Boolean);
+                } else {
+                  mapped.notes = [];
+                }
+                break;
+              case 'nexteventdate':
+              case 'next event date':
+                mapped.nextEventDate = value;
+                break;
+            }
+          });
 
-          switch (lowerKey) {
-            case '_id':
-              mapped._id = String(value);
-              break;
-            case 'company':
-              mapped.company = String(value);
-              break;
-            case 'position':
-              mapped.position = String(value);
-              break;
-            case 'status':
-              mapped.status = String(value);
-              break;
-            case 'applieddate':
-            case 'applied date':
-              mapped.appliedDate = value;
-              break;
-            case 'source':
-              mapped.source = String(value);
-              break;
-            case 'salarymin':
-            case 'salary min':
-              mapped.salaryMin = typeof value === 'number' ? value : parseFloat(value) || undefined;
-              break;
-            case 'salarymax':
-            case 'salary max':
-              mapped.salaryMax = typeof value === 'number' ? value : parseFloat(value) || undefined;
-              break;
-            case 'url':
-              mapped.url = String(value);
-              break;
-            case 'contact name':
-              if (!mapped.contact) mapped.contact = {};
-              mapped.contact.name = String(value);
-              break;
-            case 'contact email':
-              if (!mapped.contact) mapped.contact = {};
-              mapped.contact.email = String(value);
-              break;
-            case 'contact phone':
-              if (!mapped.contact) mapped.contact = {};
-              mapped.contact.phone = String(value);
-              break;
-            case 'notes':
-              if (Array.isArray(value)) {
-                mapped.notes = value.map(v => String(v));
-              } else if (typeof value === 'string') {
-                mapped.notes = value.split(';').map(s => s.trim()).filter(Boolean);
-              } else {
-                mapped.notes = [];
-              }
-              break;
-            case 'nexteventdate':
-            case 'next event date':
-              mapped.nextEventDate = value;
-              break;
-            // ignore others
+          if (!mapped.company || !mapped.position) {
+            throw new Error('Each application must have company and position');
           }
+          if (!mapped.status || !statusOptions.includes(mapped.status as ApplicationStatus)) {
+            mapped.status = 'Sent';
+          }
+          return mapped;
         });
 
-        // Ensure required fields
-        if (!mapped.company || !mapped.position) {
-          throw new Error('Each application must have company and position');
-        }
-        if (!mapped.status || !statusOptions.includes(mapped.status as ApplicationStatus)) {
-          mapped.status = 'Sent';
-        }
-        return mapped;
-      });
+        const existingApps = await getApplications({ limit: 10000 });
 
-      // Fetch all existing applications to check for duplicates
-      const existingApps = await getApplications({ limit: 10000 });
+        let createdCount = 0;
+        let updatedCount = 0;
+        const errors: string[] = [];
 
-      // Process each application: create or update
-      let createdCount = 0;
-      let updatedCount = 0;
-      const errors: string[] = [];
+        for (const appData of applicationsToProcess) {
+          try {
+            let existing: Application | undefined;
+            if (appData._id) {
+              existing = existingApps.find(a => a._id === appData._id);
+            }
+            if (!existing) {
+              existing = existingApps.find(a =>
+                a.company.toLowerCase() === appData.company.toLowerCase() &&
+                a.position.toLowerCase() === appData.position.toLowerCase()
+              );
+            }
 
-      for (const appData of applicationsToProcess) {
-        try {
-          // Find existing by _id if present, else by company+position (case-insensitive)
-          let existing: Application | undefined;
-          if (appData._id) {
-            existing = existingApps.find(a => a._id === appData._id);
+            delete appData.statusHistory;
+
+            if (existing) {
+              await updateApplication(existing._id!, appData);
+              updatedCount++;
+            } else {
+              delete appData._id;
+              await createApplication(appData);
+              createdCount++;
+            }
+          } catch (err: any) {
+            errors.push(`Failed to process ${appData.company}: ${err.message}`);
           }
-          if (!existing) {
-            existing = existingApps.find(a =>
-              a.company.toLowerCase() === appData.company.toLowerCase() &&
-              a.position.toLowerCase() === appData.position.toLowerCase()
-            );
-          }
-
-          // Remove statusHistory before updating to avoid conflicts
-          delete appData.statusHistory;
-
-          if (existing) {
-            // Update existing application (except statusHistory)
-            await updateApplication(existing._id!, appData);
-            updatedCount++;
-          } else {
-            // Create new application
-            delete appData._id;
-            await createApplication(appData);
-            createdCount++;
-          }
-        } catch (err: any) {
-          errors.push(`Failed to process ${appData.company} - ${appData.position}: ${err.message}`);
         }
+
+        let summary = `Import completed: ${createdCount} created, ${updatedCount} updated.`;
+        if (errors.length > 0) {
+          summary += ` Errors: ${errors.join('; ')}`;
+          setError(summary);
+        } else {
+          setSuccessMessage(summary);
+          setError(null);
+        }
+
+        await fetchApplications();
+        await loadSources();
+      } catch (err: any) {
+        setError(err.message || `Failed to process file: ${file.name}`);
       }
-
-      // Show summary
-      let summary = `Import completed: ${createdCount} created, ${updatedCount} updated.`;
-      if (errors.length > 0) {
-        summary += ` Errors: ${errors.join('; ')}`;
-        setError(summary);
-      } else {
-        setSuccessMessage(summary);
-        setError(null);
-      }
-
-      // Refresh data
-      await fetchApplications();
-      await loadSources();
-
-    } catch (err: any) {
-      setError(err.message || 'Failed to import data');
-    } finally {
-      event.target.value = '';
     }
-  };
+  }, [fetchApplications, loadSources]);
 
-  // --- Export single application ---
+  const handleImportFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      await processImportFiles(files);
+    }
+    event.target.value = '';
+  }, [processImportFiles]);
+
   const handleExportSingle = useCallback(async (id: string) => {
     try {
       const app = applications.find(a => a._id === id);
@@ -430,7 +417,6 @@ const ApplicationListPage = memo(() => {
     }
   }, [applications]);
 
-  // --- Import single application (update) ---
   const handleImportSingle = useCallback(async (id: string, file: File) => {
     try {
       const text = await file.text();
@@ -441,7 +427,6 @@ const ApplicationListPage = memo(() => {
         setError('Only JSON format is supported for single application import.');
         return;
       }
-      // Remove statusHistory to avoid conflict
       delete data.statusHistory;
       await updateApplication(id, data);
       fetchApplications();
@@ -454,192 +439,437 @@ const ApplicationListPage = memo(() => {
 
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            CRM Smart Tracker
-          </Typography>
-          <ThemeToggle />
-          <Button color="inherit" onClick={() => navigate('/dashboard')} startIcon={<DashboardIcon />} sx={{ ml: 1 }}>
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Dashboard</Box>
-          </Button>
-          <Tooltip title="Import all applications from CSV/JSON for backup or sharing. Supports updating existing applications by _id or company+position.">
-            <Button color="inherit" onClick={handleImportClick} startIcon={<ImportIcon />} sx={{ ml: 1 }}>
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Import</Box>
-            </Button>
-          </Tooltip>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            accept=".json,.csv"
-            onChange={handleImportFileChange}
-          />
-          <Button color="inherit" onClick={handleLogout} startIcon={<LogoutIcon />} sx={{ ml: 1 }}>
-            <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Logout</Box>
-          </Button>
-          <Tooltip title="Export all applications as CSV or JSON for backup or sharing.">
-            <Button color="inherit" startIcon={<ExportIcon />} onClick={handleExportClick} sx={{ ml: 1 }}>
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Export</Box>
-            </Button>
-          </Tooltip>
-          <Menu
-            anchorEl={exportAnchorEl}
-            open={Boolean(exportAnchorEl)}
-            onClose={handleExportClose}
-          >
-            <MenuItem onClick={() => handleExport('csv')}>Export CSV</MenuItem>
-            <MenuItem onClick={() => handleExport('json')}>Export JSON</MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1">
-            Applications
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/new')}
-          >
-            Add Application
-          </Button>
-        </Box>
-
-        <Paper
-          elevation={1}
+      <Box
+        sx={{
+          display: 'flex',
+          height: '100%',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        <Box
           sx={{
-            p: 2,
-            mb: 3,
-            backgroundColor: 'background.paper',
+            width: { xs: 98, sm: 122, md: 146 },
+            flexShrink: 0,
+            height: '100%',
+            background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
+          }}
+        />
+
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            backgroundColor: 'background.default',
+            overflow: 'hidden',
           }}
         >
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <TextField
-              label="Search"
-              value={search}
-              onChange={handleSearchChange}
-              size="small"
-              sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}
-            />
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-              <InputLabel>Status</InputLabel>
-              <Select
-                multiple
-                value={statusFilter}
-                onChange={handleStatusChange}
-                input={<OutlinedInput label="Status" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} size="small" />
-                    ))}
+          <Box
+            sx={{
+              p: { xs: 2, md: 4 },
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              backgroundColor: 'background.default',
+              minHeight: 0,
+            }}
+          >
+            <DragDropImport
+              onDrop={processImportFiles}
+              accept=".json,.csv"
+              multiple
+              onError={(err) => setError(err)}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: 1,
+                  minHeight: 0,
+                  height: '100%',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box 
+                  sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', lg: 'row' }, 
+                    justifyContent: 'space-between', 
+                    alignItems: { xs: 'stretch', lg: 'flex-start' }, 
+                    gap: 4, 
+                    mb: 1, 
+                    flexShrink: 0 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, mt: { lg: 5 } }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<DashboardIcon />}
+                      onClick={() => navigate('/dashboard')}
+                      sx={{ 
+                        borderRadius: '20px', 
+                        fontWeight: 'bold', 
+                        px: 3, 
+                        py: 1,
+                        color: '#1976d2',
+                        border: '2px solid #1976d2',
+                        background: 'linear-gradient(0deg, #EFFFEF 0%, #ffffff 100%)',
+                        '&:hover': {
+                          border: '2px solid #1565c0',
+                          background: 'linear-gradient(0deg, #D7F4D7 0%, #ffffff 100%)',
+                        }
+                      }}
+                    >
+                      Dashboard
+                    </Button>
+                    
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.6,
+                        backgroundColor: '#fff',
+                        p: 0.5,
+                        px: 0.7,
+                        borderRadius: 6,
+                        border: '1px solid #e0e0e0',
+                        boxShadow: '0px 1px 3px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <GridViewIcon 
+                        onClick={() => setViewMode('card')}
+                        sx={{ 
+                          cursor: 'pointer', 
+                          color: viewMode === 'card' ? '#666' : '#ccc',
+                          transition: 'color 0.2s',
+                          fontSize: '1.2rem'
+                        }} 
+                      />
+                      <Box
+                        onClick={() => setViewMode(prev => prev === 'card' ? 'list' : 'card')}
+                        sx={{
+                          width: 40,
+                          height: 22,
+                          borderRadius: 11,
+                          backgroundColor: '#e0e0e0',
+                          position: 'relative',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 2,
+                            left: viewMode === 'card' ? 2 : 21,
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #a1e2a1 0%, #4facfe 100%)',
+                            transition: 'left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                            boxShadow: '0px 1px 2px rgba(0,0,0,0.2)'
+                          }}
+                        />
+                      </Box>
+                      <ListViewIcon 
+                        onClick={() => setViewMode('list')}
+                        sx={{ 
+                          cursor: 'pointer', 
+                          color: viewMode === 'list' ? '#666' : '#ccc',
+                          transition: 'color 0.2s',
+                          fontSize: '1.2rem'
+                        }} 
+                      />
+                    </Box>
                   </Box>
-                )}
-              >
-                {statusOptions.map((status) => (
-                  <MenuItem key={status} value={status}>
-                    {status}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-              <InputLabel>Source</InputLabel>
-              <Select
-                multiple
-                value={sourceFilter}
-                onChange={handleSourceChange}
-                input={<OutlinedInput label="Source" />}
-                renderValue={(selected) => (
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {selected.map((value) => (
-                      <Chip key={value} label={value} size="small" />
-                    ))}
+
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      flex: 1,
+                      backgroundColor: 'background.paper',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                        <TextField
+                          label="Search"
+                          value={search}
+                          onChange={handleSearchChange}
+                          size="small"
+                          slotProps={{ inputLabel: { shrink: true } }}
+                          sx={{ 
+                            flex: { xs: '1 1 100%', sm: 1 },
+                            '& .MuiOutlinedInput-root': filterInputSx
+                          }}
+                        />
+                        <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
+                          <InputLabel shrink>Source</InputLabel>
+                          <Select
+                            multiple
+                            value={sourceFilter}
+                            onChange={handleSourceChange}
+                            input={<OutlinedInput label="Source" notched />}
+                            renderValue={(selected) => (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {selected.map((value) => (
+                                  <Chip key={value} label={value} size="small" />
+                                ))}
+                              </Box>
+                            )}
+                            sx={filterInputSx}
+                          >
+                            {sourceOptions.length === 0 ? (
+                              <MenuItem disabled>
+                                No sources available.
+                              </MenuItem>
+                            ) : (
+                              sourceOptions.map((src) => (
+                                <MenuItem key={src} value={src}>
+                                  {src}
+                                </MenuItem>
+                              ))
+                            )}
+                          </Select>
+                        </FormControl>
+                        <FormControl size="small" sx={{ minWidth: 100, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
+                          <InputLabel shrink>Order</InputLabel>
+                          <Select
+                            value={sortOrder}
+                            onChange={handleSortOrderChange}
+                            label="Order"
+                            notched
+                            sx={filterInputSx}
+                          >
+                            <MenuItem value="asc">Asc</MenuItem>
+                            <MenuItem value="desc">Desc</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                        <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
+                          <InputLabel shrink>Status</InputLabel>
+                          <Select
+                            multiple
+                            value={statusFilter}
+                            onChange={handleStatusChange}
+                            input={<OutlinedInput label="Status" notched />}
+                            renderValue={(selected) => (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {selected.map((value) => (
+                                  <Chip key={value} label={value} size="small" />
+                                ))}
+                              </Box>
+                            )}
+                            sx={filterInputSx}
+                          >
+                            {statusOptions.map((status) => (
+                              <MenuItem key={status} value={status}>
+                                {status}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                        <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
+                          <InputLabel shrink>Sort By</InputLabel>
+                          <Select
+                            value={sortBy}
+                            onChange={handleSortByChange}
+                            label="Sort By"
+                            notched
+                            sx={filterInputSx}
+                          >
+                            <MenuItem value="appliedDate">Applied Date</MenuItem>
+                            <MenuItem value="nextEventDate">Next Event</MenuItem>
+                            <MenuItem value="salaryMax">Salary Max</MenuItem>
+                          </Select>
+                        </FormControl>
+                        
+                        <Box sx={{ display: 'flex', justifyContent: { xs: 'center', sm: 'flex-end' }, minWidth: 150, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
+                          <Button 
+                            variant="outlined"
+                            onClick={handleResetFilters} 
+                            sx={{ 
+                              borderRadius: '20px', 
+                              fontWeight: 'bold', 
+                              color: '#58A4E8',
+                              border: '1px solid #4fc3f7',
+                              background: 'linear-gradient(90deg, #e1f5fe 0%, #ffffff 100%)',
+                              '&:hover': {
+                                border: '1px solid #29b6f6',
+                                background: 'linear-gradient(90deg, #b3e5fc 0%, #ffffff 100%)',
+                              }
+                            }}
+                          >
+                            Reset Filters
+                          </Button>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Paper>
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: { xs: 'stretch', lg: 'center' }, justifyContent: 'center', mt: { lg: 2 } }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<AddIcon />}
+                      onClick={() => navigate('/new')}
+                      sx={{ 
+                        fontWeight: 'bold', 
+                        py: 1, 
+                        px: 3, 
+                        whiteSpace: 'nowrap', 
+                        borderRadius: '8px',
+                        color: '#000000',
+                        border: '2px solid #1976d2',
+                        background: 'linear-gradient(135deg, #E5FFE5 0%, #ffffff 60%)',
+                        '&:hover': {
+                          border: '2px solid #1565c0',
+                          background: 'linear-gradient(135deg, #D7F4D7 0%, #ffffff 100%)',
+                        }
+                      }}
+                    >
+                      Add Application
+                    </Button>
+                    
+                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', width: '100%' }}>
+                      <Tooltip title="Import all applications from CSV/JSON.">
+                        <Button
+                          variant="outlined"
+                          startIcon={<ImportIcon />}
+                          onClick={() => fileInputRef.current?.click()}
+                          sx={{ 
+                            borderRadius: '20px', 
+                            flex: 1,
+                            color: '#1976d2',
+                            border: '1px solid #1976d2',
+                            background: 'linear-gradient(90deg, #e3f2fd 0%, #ffffff 100%)',
+                            '&:hover': {
+                              border: '1px solid #1565c0',
+                              background: 'linear-gradient(90deg, #bbdefb 0%, #ffffff 100%)',
+                            }
+                          }}
+                        >
+                          Import
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="Export all applications as CSV or JSON.">
+                        <Button
+                          variant="outlined"
+                          startIcon={<ExportIcon />}
+                          onClick={handleExportClick}
+                          sx={{ 
+                            borderRadius: '20px', 
+                            flex: 1,
+                            color: '#1976d2',
+                            border: '1px solid #1976d2',
+                            background: 'linear-gradient(90deg, #e3f2fd 0%, #ffffff 100%)',
+                            '&:hover': {
+                              border: '1px solid #1565c0',
+                              background: 'linear-gradient(90deg, #bbdefb 0%, #ffffff 100%)',
+                            }
+                          }}
+                        >
+                          Export
+                        </Button>
+                      </Tooltip>
+                    </Box>
                   </Box>
-                )}
-              >
-                {sourceOptions.length === 0 ? (
-                  <MenuItem disabled>
-                    No sources available. Please add sources to your applications.
-                  </MenuItem>
-                ) : (
-                  sourceOptions.map((src) => (
-                    <MenuItem key={src} value={src}>
-                      {src}
-                    </MenuItem>
-                  ))
-                )}
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-              <InputLabel>Sort By</InputLabel>
-              <Select
-                value={sortBy}
-                onChange={handleSortByChange}
-                label="Sort By"
-              >
-                <MenuItem value="appliedDate">Applied Date</MenuItem>
-                <MenuItem value="nextEventDate">Next Event</MenuItem>
-                <MenuItem value="salaryMax">Salary Max</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 100 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-              <InputLabel>Order</InputLabel>
-              <Select
-                value={sortOrder}
-                onChange={handleSortOrderChange}
-                label="Order"
-              >
-                <MenuItem value="asc">Asc</MenuItem>
-                <MenuItem value="desc">Desc</MenuItem>
-              </Select>
-            </FormControl>
-            <Button variant="outlined" onClick={handleResetFilters} sx={{ flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-              Reset Filters
-            </Button>
+                </Box>
+
+                <Box sx={{ height: 1.85, backgroundColor: '#e0e0e0', width: '100%', mb: 1, flexShrink: 0 }} />
+                
+                <Box
+                  className="table-scroll-container"
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflow: 'auto',
+                    p: 0.5,
+                  }}
+                >
+                  {loading ? (
+                    <LoadingSpinner />
+                  ) : viewMode === 'list' ? (
+                    <ApplicationTable
+                      applications={applications}
+                      onEdit={(id: string) => navigate(`/edit/${id}`)}
+                      onDelete={handleDeleteClick}
+                      onRowClick={(id: string) => navigate(`/detail/${id}`)}
+                      onExportSingle={handleExportSingle}
+                      onImportSingle={handleImportSingle}
+                    />
+                  ) : (
+                    <ApplicationCardList
+                      applications={applications}
+                      onEdit={(id: string) => navigate(`/edit/${id}`)}
+                      onDelete={handleDeleteClick}
+                      onRowClick={(id: string) => navigate(`/detail/${id}`)}
+                      onExportSingle={handleExportSingle}
+                      onImportSingle={handleImportSingle}
+                    />
+                  )}
+                </Box>
+
+                <DeleteConfirmationDialog
+                  open={deleteDialogOpen}
+                  onConfirm={handleDeleteConfirm}
+                  onClose={handleDeleteCancel}
+                />
+
+                <ErrorSnackbar
+                  open={!!error}
+                  message={error || ''}
+                  onClose={() => setError(null)}
+                />
+
+                <Snackbar
+                  open={!!successMessage}
+                  autoHideDuration={5000}
+                  onClose={() => setSuccessMessage(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                  <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+                    {successMessage}
+                  </Alert>
+                </Snackbar>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept=".json,.csv"
+                  onChange={handleImportFileInputChange}
+                />
+                <Menu
+                  anchorEl={exportAnchorEl}
+                  open={Boolean(exportAnchorEl)}
+                  onClose={handleExportClose}
+                >
+                  <MenuItem onClick={() => handleExport('csv')}>Export CSV</MenuItem>
+                  <MenuItem onClick={() => handleExport('json')}>Export JSON</MenuItem>
+                </Menu>
+
+              </Box>
+            </DragDropImport>
           </Box>
-        </Paper>
+        </Box>
 
-        {loading ? (
-          <LoadingSpinner />
-        ) : (
-          <ApplicationTable
-            applications={applications}
-            onEdit={(id: string) => navigate(`/edit/${id}`)}
-            onDelete={handleDeleteClick}
-            onRowClick={(id: string) => navigate(`/detail/${id}`)}
-            onExportSingle={handleExportSingle}
-            onImportSingle={handleImportSingle}
-          />
-        )}
-
-        <DeleteConfirmationDialog
-          open={deleteDialogOpen}
-          onConfirm={handleDeleteConfirm}
-          onClose={handleDeleteCancel}
+        <Box
+          sx={{
+            width: { xs: 98, sm: 122, md: 146 },
+            flexShrink: 0,
+            height: '100%',
+            background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
+          }}
         />
-
-        <ErrorSnackbar
-          open={!!error}
-          message={error || ''}
-          onClose={() => setError(null)}
-        />
-
-        <Snackbar
-          open={!!successMessage}
-          autoHideDuration={5000}
-          onClose={() => setSuccessMessage(null)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
-            {successMessage}
-          </Alert>
-        </Snackbar>
-      </Container>
+      </Box>
     </>
   );
 });

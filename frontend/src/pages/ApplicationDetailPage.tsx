@@ -28,6 +28,7 @@ import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
 import { saveFileWithPicker } from '../utils/fileUtils';
+import { DragDropImport } from '../components/DragDropImport';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -47,6 +48,42 @@ const statusColorMap: Record<ApplicationStatus, 'default' | 'primary' | 'seconda
   Offer: 'success',
   Rejected: 'error',
   Archived: 'default',
+};
+
+// Custom scrollbar styling to match the requested design
+const pageScrollbarSx = {
+  width: '100%',
+  height: '100%',
+  overflowY: 'auto',
+  '&::-webkit-scrollbar': {
+    width: '14px',
+  },
+  '&::-webkit-scrollbar-track': {
+    backgroundColor: '#f1f1f1',
+  },
+  '&::-webkit-scrollbar-thumb': {
+    backgroundColor: '#c1c1c1',
+    borderRadius: '8px',
+    border: '3px solid #f1f1f1',
+    backgroundClip: 'padding-box',
+  },
+  '&::-webkit-scrollbar-thumb:hover': {
+    backgroundColor: '#a8a8a8',
+  },
+  '&::-webkit-scrollbar-button:vertical:decrement': {
+    display: 'block',
+    height: '14px',
+    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 14l5-5 5 5z\'/></svg>")',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+  },
+  '&::-webkit-scrollbar-button:vertical:increment': {
+    display: 'block',
+    height: '14px',
+    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+  },
 };
 
 const ApplicationDetailPage = () => {
@@ -162,13 +199,9 @@ const ApplicationDetailPage = () => {
     }
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImportFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !application) return;
+  // Import logic for a single file shared between button and drag-drop
+  const processImportFile = useCallback(async (file: File) => {
+    if (!application) return;
     try {
       const text = await file.text();
       const data = JSON.parse(text);
@@ -180,242 +213,274 @@ const ApplicationDetailPage = () => {
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to import application');
-    } finally {
-      event.target.value = '';
     }
+  }, [application]);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
   };
 
+  const handleImportFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await processImportFile(file);
+    }
+    event.target.value = '';
+  }, [processImportFile]);
+
+  // Handler for drag-drop
+  const handleDropFile = useCallback((files: FileList) => {
+    if (files.length > 0) {
+      processImportFile(files[0]);
+    }
+  }, [processImportFile]);
+
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <Box sx={pageScrollbarSx}>
+        <LoadingSpinner />
+      </Box>
+    );
   }
 
   if (!application) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography variant="h6">Application not found</Typography>
-        <Button onClick={handleBack} startIcon={<ArrowBack />}>
-          Back to list
-        </Button>
-      </Container>
+      <Box sx={pageScrollbarSx}>
+        <Container maxWidth="md" sx={{ py: 4 }}>
+          <Typography variant="h6">Application not found</Typography>
+          <Button onClick={handleBack} startIcon={<ArrowBack />}>
+            Back to list
+          </Button>
+        </Container>
+      </Box>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Button onClick={handleBack} startIcon={<ArrowBack />}>
-          Back to list
-        </Button>
-        <Box>
-          <Tooltip title="Edit this application">
-            <Button startIcon={<Edit />} onClick={handleEdit} sx={{ mr: 1 }}>
-              Edit
-            </Button>
-          </Tooltip>
-          <Tooltip title="Delete this application">
-            <Button startIcon={<Delete />} onClick={handleDeleteClick} color="error" sx={{ mr: 1 }}>
-              Delete
-            </Button>
-          </Tooltip>
-          <Tooltip title="Export this application for backup or sharing.">
-            <Button startIcon={<GetApp />} onClick={handleExport} sx={{ mr: 1 }}>
-              Export
-            </Button>
-          </Tooltip>
-          <Tooltip title="Import from JSON to update this application.">
-            <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
-              Import
-            </Button>
-          </Tooltip>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            accept=".json"
-            onChange={handleImportFileChange}
-          />
-        </Box>
-      </Box>
-
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+    <Box sx={pageScrollbarSx}>
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Button onClick={handleBack} startIcon={<ArrowBack />}>
+            Back to list
+          </Button>
           <Box>
-            <Typography variant="h4" component="h1">
-              {application.company}
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              {application.position}
-            </Typography>
-          </Box>
-          <Chip
-            label={application.status}
-            color={statusColorMap[application.status] || 'default'}
-            size="medium"
-          />
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-            gap: 2,
-            mb: 2,
-          }}
-        >
-          {application.url && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">URL</Typography>
-              <Typography>
-                <a href={application.url} target="_blank" rel="noopener noreferrer">
-                  {application.url}
-                </a>
-              </Typography>
-            </Box>
-          )}
-          {application.source && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">Source</Typography>
-              <Typography>{application.source}</Typography>
-            </Box>
-          )}
-          {application.salaryMin !== undefined && application.salaryMax !== undefined && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">Salary</Typography>
-              <Typography>
-                {application.salaryMin} - {application.salaryMax}
-              </Typography>
-            </Box>
-          )}
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">Applied Date</Typography>
-            <Typography>{formatDate(application.appliedDate)}</Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">Next Event</Typography>
-            <Typography>{formatDate(application.nextEventDate)}</Typography>
-          </Box>
-          {application.contact && (application.contact.name || application.contact.email || application.contact.phone) && (
-            <Box sx={{ gridColumn: '1 / -1' }}>
-              <Typography variant="subtitle2" color="text.secondary">Contact</Typography>
-              <Typography>
-                {application.contact.name && `Name: ${application.contact.name}`}
-                {application.contact.email && `, Email: ${application.contact.email}`}
-                {application.contact.phone && `, Phone: ${application.contact.phone}`}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" gutterBottom>Change Status</Typography>
-          <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel id="status-select-label">Status</InputLabel>
-            <Select
-              labelId="status-select-label"
-              value={selectedStatus}
-              label="Status"
-              onChange={handleStatusChange}
-            >
-              {statusOptions.map((s) => (
-                <MenuItem key={s} value={s}>{s}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" gutterBottom>Notes</Typography>
-          {application.notes && application.notes.length > 0 ? (
-            <List dense>
-              {application.notes.map((note, index) => (
-                <ListItem key={index} divider>
-                  <ListItemText primary={note} secondary={`Note ${index + 1}`} />
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Typography variant="body2" color="text.secondary">No notes yet.</Typography>
-          )}
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            <TextField
-              label="Add note"
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              fullWidth
-              size="small"
-              slotProps={{ inputLabel: { shrink: true } }}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddNote();
-                }
-              }}
+            <Tooltip title="Edit this application">
+              <Button startIcon={<Edit />} onClick={handleEdit} sx={{ mr: 1 }}>
+                Edit
+              </Button>
+            </Tooltip>
+            <Tooltip title="Delete this application">
+              <Button startIcon={<Delete />} onClick={handleDeleteClick} color="error" sx={{ mr: 1 }}>
+                Delete
+              </Button>
+            </Tooltip>
+            <Tooltip title="Export this application for backup or sharing.">
+              <Button startIcon={<GetApp />} onClick={handleExport} sx={{ mr: 1 }}>
+                Export
+              </Button>
+            </Tooltip>
+            <Tooltip title="Import from JSON to update this application.">
+              <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
+                Import
+              </Button>
+            </Tooltip>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              accept=".json"
+              onChange={handleImportFileChange}
             />
-            <Button variant="contained" onClick={handleAddNote} disabled={!newNote.trim()}>
-              Add
-            </Button>
           </Box>
         </Box>
 
-        <Divider sx={{ my: 2 }} />
+        <DragDropImport
+          onDrop={handleDropFile}
+          accept=".json"
+          multiple={false}
+          onError={(err) => setError(err)}
+        >
+          <Paper sx={{ p: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box>
+                <Typography variant="h4" component="h1">
+                  {application.company}
+                </Typography>
+                <Typography variant="h6" color="text.secondary">
+                  {application.position}
+                </Typography>
+              </Box>
+              <Chip
+                label={application.status}
+                color={statusColorMap[application.status] || 'default'}
+                size="medium"
+              />
+            </Box>
 
-        <Box>
-          <Typography variant="h6" gutterBottom>Status History</Typography>
-          {application.statusHistory && application.statusHistory.length > 0 ? (
-            <List dense>
-              {application.statusHistory
-                .slice()
-                .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
-                .map((item, index) => (
-                  <ListItem key={index} divider>
-                    <ListItemText
-                      primary={
-                        <Chip
-                          label={item.status}
-                          color={statusColorMap[item.status] || 'default'}
-                          size="small"
+            <Divider sx={{ my: 2 }} />
+
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 2,
+                mb: 2,
+              }}
+            >
+              {application.url && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">URL</Typography>
+                  <Typography>
+                    <a href={application.url} target="_blank" rel="noopener noreferrer">
+                      {application.url}
+                    </a>
+                  </Typography>
+                </Box>
+              )}
+              {application.source && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Source</Typography>
+                  <Typography>{application.source}</Typography>
+                </Box>
+              )}
+              {application.salaryMin !== undefined && application.salaryMax !== undefined && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Salary</Typography>
+                  <Typography>
+                    {application.salaryMin} - {application.salaryMax}
+                  </Typography>
+                </Box>
+              )}
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">Applied Date</Typography>
+                <Typography>{formatDate(application.appliedDate)}</Typography>
+              </Box>
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">Next Event</Typography>
+                <Typography>{formatDate(application.nextEventDate)}</Typography>
+              </Box>
+              {application.contact && (application.contact.name || application.contact.email || application.contact.phone) && (
+                <Box sx={{ gridColumn: '1 / -1' }}>
+                  <Typography variant="subtitle2" color="text.secondary">Contact</Typography>
+                  <Typography>
+                    {application.contact.name && `Name: ${application.contact.name}`}
+                    {application.contact.email && `, Email: ${application.contact.email}`}
+                    {application.contact.phone && `, Phone: ${application.contact.phone}`}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>Change Status</Typography>
+              <FormControl sx={{ minWidth: 200 }}>
+                <InputLabel id="status-select-label">Status</InputLabel>
+                <Select
+                  labelId="status-select-label"
+                  value={selectedStatus}
+                  label="Status"
+                  onChange={handleStatusChange}
+                >
+                  {statusOptions.map((s) => (
+                    <MenuItem key={s} value={s}>{s}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="h6" gutterBottom>Notes</Typography>
+              {application.notes && application.notes.length > 0 ? (
+                <List dense>
+                  {application.notes.map((note, index) => (
+                    <ListItem key={index} divider>
+                      <ListItemText primary={note} secondary={`Note ${index + 1}`} />
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No notes yet.</Typography>
+              )}
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <TextField
+                  label="Add note"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  fullWidth
+                  size="small"
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNote();
+                    }
+                  }}
+                />
+                <Button variant="contained" onClick={handleAddNote} disabled={!newNote.trim()}>
+                  Add
+                </Button>
+              </Box>
+            </Box>
+
+            <Divider sx={{ my: 2 }} />
+
+            <Box>
+              <Typography variant="h6" gutterBottom>Status History</Typography>
+              {application.statusHistory && application.statusHistory.length > 0 ? (
+                <List dense>
+                  {application.statusHistory
+                    .slice()
+                    .sort((a, b) => new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime())
+                    .map((item, index) => (
+                      <ListItem key={index} divider>
+                        <ListItemText
+                          primary={
+                            <Chip
+                              label={item.status}
+                              color={statusColorMap[item.status] || 'default'}
+                              size="small"
+                            />
+                          }
+                          secondary={`Changed at: ${formatDate(item.changedAt)}`}
                         />
-                      }
-                      secondary={`Changed at: ${formatDate(item.changedAt)}`}
-                    />
-                  </ListItem>
-                ))}
-            </List>
-          ) : (
-            <Typography variant="body2" color="text.secondary">No status history.</Typography>
-          )}
-        </Box>
-      </Paper>
+                      </ListItem>
+                    ))}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No status history.</Typography>
+              )}
+            </Box>
+          </Paper>
+        </DragDropImport>
 
-      <ErrorSnackbar
-        open={!!error}
-        message={error || ''}
-        onClose={() => setError(null)}
-      />
+        <ErrorSnackbar
+          open={!!error}
+          message={error || ''}
+          onClose={() => setError(null)}
+        />
 
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={5000}
-        onClose={() => setSuccessMessage(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={5000}
+          onClose={() => setSuccessMessage(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+            {successMessage}
+          </Alert>
+        </Snackbar>
 
-      <DeleteConfirmationDialog
-        open={deleteDialogOpen}
-        onConfirm={handleDeleteConfirm}
-        onClose={handleDeleteCancel}
-      />
-    </Container>
+        <DeleteConfirmationDialog
+          open={deleteDialogOpen}
+          onConfirm={handleDeleteConfirm}
+          onClose={handleDeleteCancel}
+        />
+      </Container>
+    </Box>
   );
 };
 
