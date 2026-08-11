@@ -8,11 +8,16 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---------- CORS and Body Parser ----------
+// ---------- CORS ----------
 app.use(cors());
-// Limit JSON payload size to 10KB to prevent memory exhaustion attacks
+
+// ---------- Body Parsers with selective limits ----------
+// Bulk import route: larger limit (1MB)
+app.use('/api/applications/bulk', express.json({ limit: '1mb' }));
+
+// Default JSON parser for all other routes (10KB)
 app.use(express.json({ limit: '10kb' }));
-// -------------------------------------------
+// -------------------------------------------------------
 
 // ---------- Rate Limiting ----------
 // General API limiter: 100 requests per 15 minutes per IP
@@ -40,10 +45,7 @@ const authLimiter = rateLimit({
 });
 
 // Apply rate limiters to specific route groups
-// Auth routes get the strict limiter
 app.use('/api/auth', authLimiter);
-
-// Protected routes get the general limiter (applied before authMiddleware)
 app.use('/api/applications', apiLimiter);
 app.use('/api/stats', apiLimiter);
 // ------------------------------------
