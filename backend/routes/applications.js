@@ -7,8 +7,7 @@ const {
   createApplication,
   updateApplication,
   deleteApplication,
-  createBulkApplications,
-  importApplications      // NEW: import controller for mass import
+  createBulkApplications   // NEW
 } = require('../controllers/applications');
 
 // Middleware for checking the validity of ObjectId (can be moved to a separate middleware)
@@ -31,10 +30,7 @@ router.get('/:id', validateId, getApplicationById);
 router.put('/:id', validateId, updateApplication);
 router.delete('/:id', validateId, deleteApplication);
 
-// Bulk create (legacy, kept for compatibility)
+// NEW: Bulk create
 router.post('/bulk', createBulkApplications);
-
-// NEW: Import endpoint for mass import with larger payload limit (handled in server.js)
-router.post('/import', importApplications);
 
 module.exports = router;

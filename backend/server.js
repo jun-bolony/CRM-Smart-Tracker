@@ -10,11 +10,12 @@ const PORT = process.env.PORT || 3000;
 
 // ---------- CORS and Body Parser ----------
 app.use(cors());
-// Global limit: 10KB for all JSON requests
-app.use(express.json({ limit: '10kb' }));
 
-// Special middleware for import endpoint with larger limit (1MB)
-app.use('/api/applications/import', express.json({ limit: '1mb' }));
+// Special route for bulk import with larger payload limit (1MB)
+app.use('/api/applications/bulk', express.json({ limit: '1mb' }));
+
+// Global JSON parser with strict 10KB limit for all other routes
+app.use(express.json({ limit: '10kb' }));
 // -------------------------------------------
 
 // ---------- Rate Limiting ----------

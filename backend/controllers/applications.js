@@ -1,21 +1,13 @@
 // backend/controllers/applications.js
 const Application = require('../models/Application');
 
-const MAX_APPLICATIONS = 1000; // Maximum total applications per user
+const MAX_APPLICATIONS_PER_USER = 1000;
 
 const formatResponse = (success, data = null, message = '') => ({
   success,
   data,
   message,
 });
-
-// Helper to check user's application count
-const checkUserLimit = async (userId, additional = 0) => {
-  const count = await Application.countDocuments({ userId });
-  if (count + additional > MAX_APPLICATIONS) {
-    throw new Error(`You have reached the maximum limit of ${MAX_APPLICATIONS} applications. Cannot create ${additional} new application(s).`);
-  }
-};
 
 exports.getAllApplications = async (req, res, next) => {
   try {
@@ -102,8 +94,13 @@ exports.createApplication = async (req, res, next) => {
       );
     }
 
-    // Check user's total application count
-    await checkUserLimit(req.userId, 1);
+    // Check user application limit
+    const count = await Application.countDocuments({ userId: req.userId });
+    if (count >= MAX_APPLICATIONS_PER_USER) {
+      return res.status(400).json(
+        formatResponse(false, null, `Maximum ${MAX_APPLICATIONS_PER_USER} applications per user exceeded.`)
+      );
+    }
 
     const newApp = new Application({
       ...data,
@@ -116,9 +113,6 @@ exports.createApplication = async (req, res, next) => {
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
       return res.status(400).json(formatResponse(false, null, messages.join('; ')));
-    }
-    if (err.message && err.message.includes('maximum limit')) {
-      return res.status(400).json(formatResponse(false, null, err.message));
     }
     next(err);
   }
@@ -193,8 +187,19 @@ exports.createBulkApplications = async (req, res, next) => {
       return res.status(400).json(formatResponse(false, null, 'Expected array of applications'));
     }
 
-    // Check user's total application count with additional count
-    await checkUserLimit(req.userId, applications.length);
+    // Check total count limit
+    const currentCount = await Application.countDocuments({ userId: req.userId });
+    const totalAfterImport = currentCount + applications.length;
+    if (totalAfterImport > MAX_APPLICATIONS_PER_USER) {
+      return res.status(400).json(
+        formatResponse(
+          false,
+          null,
+          `Cannot import ${applications.length} applications. ` +
+          `You already have ${currentCount} applications, maximum is ${MAX_APPLICATIONS_PER_USER}.`
+        )
+      );
+    }
 
     const created = [];
     const errors = [];
@@ -226,7 +231,7 @@ exports.createBulkApplications = async (req, res, next) => {
     }
 
     if (errors.length > 0) {
-      // Partial success – return created items plus warning
+      // Partial success – return 207 with warnings
       return res.status(207).json({
         success: true,
         data: created,
@@ -239,87 +244,6 @@ exports.createBulkApplications = async (req, res, next) => {
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
       return res.status(400).json(formatResponse(false, null, messages.join('; ')));
-    }
-    if (err.message && err.message.includes('maximum limit')) {
-      return res.status(400).json(formatResponse(false, null, err.message));
-    }
-    next(err);
-  }
-};
-
-// ========== NEW: importApplications for mass import with single request ==========
-exports.importApplications = async (req, res, next) => {
-  try {
-    const { applications } = req.body;
-    if (!Array.isArray(applications)) {
-      return res.status(400).json(formatResponse(false, null, 'Expected array of applications'));
-    }
-
-    if (applications.length === 0) {
-      return res.status(400).json(formatResponse(false, null, 'No applications to import'));
-    }
-
-    // Check user's total application count
-    await checkUserLimit(req.userId, applications.length);
-
-    const created = [];
-    const errors = [];
-
-    for (const data of applications) {
-      // Basic validation
-      if (!data.company || !data.position) {
-        errors.push(`Missing company or position for application: ${JSON.stringify(data)}`);
-        continue;
-      }
-
-      try {
-        // Prepare data: ensure userId and statusHistory
-        const appData = {
-          ...data,
-          userId: req.userId,
-          status: data.status || 'Sent',
-          statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }],
-        };
-        // Remove any _id that might have been sent to avoid conflicts
-        delete appData._id;
-        delete appData.createdAt;
-        delete appData.updatedAt;
-        delete appData.__v;
-
-        const newApp = new Application(appData);
-        const saved = await newApp.save();
-        created.push(saved);
-      } catch (err) {
-        if (err.name === 'ValidationError') {
-          const messages = Object.values(err.errors).map(e => e.message);
-          errors.push(`Validation error for ${data.company || 'unknown'}: ${messages.join('; ')}`);
-        } else {
-          errors.push(`Error for ${data.company || 'unknown'}: ${err.message}`);
-        }
-      }
-    }
-
-    if (created.length === 0 && errors.length > 0) {
-      return res.status(400).json(formatResponse(false, null, `Import failed: ${errors.join('; ')}`));
-    }
-
-    if (errors.length > 0) {
-      // Partial success
-      return res.status(207).json({
-        success: true,
-        data: created,
-        message: `Imported ${created.length} applications. Errors: ${errors.join('; ')}`,
-      });
-    }
-
-    res.status(201).json(formatResponse(true, created));
-  } catch (err) {
-    if (err.name === 'ValidationError') {
-      const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json(formatResponse(false, null, messages.join('; ')));
-    }
-    if (err.message && err.message.includes('maximum limit')) {
-      return res.status(400).json(formatResponse(false, null, err.message));
     }
     next(err);
   }
