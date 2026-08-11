@@ -4,19 +4,37 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---------- CORS and Body Parser ----------
-app.use(cors());
+// ---------- Security Headers (Helmet) ----------
+app.use(helmet());
+// -----------------------------------------------
 
+// ---------- CORS ----------
+// Allow only the frontend URL specified in environment variables.
+// For development, you can set FRONTEND_URL to 'http://localhost:5173' etc.
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL]
+  : ['http://localhost:5173', 'http://localhost:3000']; // fallback for local dev
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true, // if you need to send cookies/authorization headers
+  })
+);
+// --------------------------
+
+// ---------- Body Parser ----------
 // Special route for bulk import with larger payload limit (1MB)
 app.use('/api/applications/bulk', express.json({ limit: '1mb' }));
 
 // Global JSON parser with strict 10KB limit for all other routes
 app.use(express.json({ limit: '10kb' }));
-// -------------------------------------------
+// ---------------------------------
 
 // ---------- Rate Limiting ----------
 // General API limiter: 100 requests per 15 minutes per IP
@@ -49,9 +67,10 @@ app.use('/api/applications', apiLimiter);
 app.use('/api/stats', apiLimiter);
 // ------------------------------------
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
+mongoose
+  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
   .then(() => console.log('MongoDB connected'))
-  .catch(err => {
+  .catch((err) => {
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
