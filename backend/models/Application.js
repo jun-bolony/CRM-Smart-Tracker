@@ -39,7 +39,21 @@ const applicationSchema = new mongoose.Schema({
   },
   appliedDate: { type: Date, required: true, default: Date.now },
   nextEventDate: { type: Date },
-  notes: { type: [String], default: [] },
+  notes: {
+    type: [String],
+    default: [],
+    validate: {
+      validator: function(notes) {
+        // Maximum 50 notes and each note at most 1000 characters
+        if (notes.length > 50) return false;
+        for (const note of notes) {
+          if (note.length > 1000) return false;
+        }
+        return true;
+      },
+      message: 'Notes must not exceed 50 items and each note must be at most 1000 characters long.'
+    }
+  },
   statusHistory: { type: [statusHistoryItemSchema], default: [] }
 }, {
   timestamps: true
@@ -47,5 +61,13 @@ const applicationSchema = new mongoose.Schema({
 
 // Indexes for fast searching
 applicationSchema.index({ company: 'text', position: 'text' });
+
+// -------- Additional indexes for performance --------
+// Compound index for filtering by user and status (frequent query)
+applicationSchema.index({ userId: 1, status: 1 });
+
+// Index for sorting by appliedDate (common)
+applicationSchema.index({ userId: 1, appliedDate: -1 });
+// ----------------------------------------------------
 
 module.exports = mongoose.model('Application', applicationSchema);

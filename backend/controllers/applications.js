@@ -55,7 +55,10 @@ exports.getAllApplications = async (req, res, next) => {
     }
 
     const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 100;
+    // -------- Pagination sanitization: enforce maximum limit of 50 --------
+    const requestedLimit = parseInt(limit, 10) || 10;
+    const limitNum = Math.min(requestedLimit, 50);
+    // ----------------------------------------------------------------------
     const skip = (pageNum - 1) * limitNum;
 
     const applications = await Application.find(filter)
