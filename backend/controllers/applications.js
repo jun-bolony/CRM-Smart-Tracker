@@ -55,10 +55,8 @@ exports.getAllApplications = async (req, res, next) => {
     }
 
     const pageNum = parseInt(page, 10) || 1;
-    // -------- Pagination sanitization: enforce maximum limit of 50 --------
     const requestedLimit = parseInt(limit, 10) || 10;
     const limitNum = Math.min(requestedLimit, 50);
-    // ----------------------------------------------------------------------
     const skip = (pageNum - 1) * limitNum;
 
     const applications = await Application.find(filter)
@@ -103,8 +101,9 @@ exports.createApplication = async (req, res, next) => {
     res.status(201).json(formatResponse(true, saved));
   } catch (err) {
     if (err.name === 'ValidationError') {
+      // Extract all validation error messages into a single readable string
       const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json(formatResponse(false, null, messages.join(', ')));
+      return res.status(400).json(formatResponse(false, null, messages.join('; ')));
     }
     next(err);
   }
@@ -153,7 +152,7 @@ exports.updateApplication = async (req, res, next) => {
   } catch (err) {
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json(formatResponse(false, null, messages.join(', ')));
+      return res.status(400).json(formatResponse(false, null, messages.join('; ')));
     }
     next(err);
   }
@@ -180,23 +179,48 @@ exports.createBulkApplications = async (req, res, next) => {
     }
 
     const created = [];
+    const errors = [];
     for (const data of applications) {
       if (!data.company || !data.position) {
+        errors.push(`Missing company or position for application: ${JSON.stringify(data)}`);
         continue;
       }
-      const newApp = new Application({
-        ...data,
-        userId: req.userId,
-        statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }],
-      });
-      const saved = await newApp.save();
-      created.push(saved);
+      try {
+        const newApp = new Application({
+          ...data,
+          userId: req.userId,
+          statusHistory: [{ status: data.status || 'Sent', changedAt: new Date() }],
+        });
+        const saved = await newApp.save();
+        created.push(saved);
+      } catch (err) {
+        if (err.name === 'ValidationError') {
+          const messages = Object.values(err.errors).map(e => e.message);
+          errors.push(`Validation error: ${messages.join('; ')}`);
+        } else {
+          errors.push(err.message);
+        }
+      }
     }
+
+    if (created.length === 0 && errors.length > 0) {
+      return res.status(400).json(formatResponse(false, null, `Import failed: ${errors.join('; ')}`));
+    }
+
+    if (errors.length > 0) {
+      // Partial success – return created items plus warning
+      return res.status(207).json({
+        success: true,
+        data: created,
+        message: `Imported ${created.length} applications. Errors: ${errors.join('; ')}`,
+      });
+    }
+
     res.status(201).json(formatResponse(true, created));
   } catch (err) {
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json(formatResponse(false, null, messages.join(', ')));
+      return res.status(400).json(formatResponse(false, null, messages.join('; ')));
     }
     next(err);
   }

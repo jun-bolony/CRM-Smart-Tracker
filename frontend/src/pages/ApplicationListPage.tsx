@@ -247,8 +247,14 @@ const ApplicationListPage = memo(() => {
     handleExportClose();
   }, [convertToCSV]);
 
+  // ========== UPDATED processImportFiles ==========
   const processImportFiles = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
+
+    // We'll process all files sequentially, collecting results.
+    let globalErrors: string[] = [];
+    let totalCreated = 0;
+    let totalUpdated = 0;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -262,7 +268,7 @@ const ApplicationListPage = memo(() => {
           const result = Papa.parse(text, { header: true, skipEmptyLines: true });
           parsedData = result.data;
         } else {
-          setError('Unsupported file format. Please upload JSON or CSV.');
+          globalErrors.push(`Unsupported file format: ${file.name}. Please upload JSON or CSV.`);
           continue;
         }
 
@@ -342,11 +348,12 @@ const ApplicationListPage = memo(() => {
           return mapped;
         });
 
+        // Fetch existing applications once per file to avoid multiple requests
         const existingApps = await getApplications({ limit: 10000 });
 
-        let createdCount = 0;
-        let updatedCount = 0;
-        const errors: string[] = [];
+        let fileErrors: string[] = [];
+        let fileCreated = 0;
+        let fileUpdated = 0;
 
         for (const appData of applicationsToProcess) {
           try {
@@ -365,33 +372,53 @@ const ApplicationListPage = memo(() => {
 
             if (existing) {
               await updateApplication(existing._id!, appData);
-              updatedCount++;
+              fileUpdated++;
             } else {
               delete appData._id;
               await createApplication(appData);
-              createdCount++;
+              fileCreated++;
             }
           } catch (err: any) {
-            errors.push(`Failed to process ${appData.company}: ${err.message}`);
+            fileErrors.push(`Failed to process ${appData.company}: ${err.message}`);
           }
         }
 
-        let summary = `Import completed: ${createdCount} created, ${updatedCount} updated.`;
-        if (errors.length > 0) {
-          summary += ` Errors: ${errors.join('; ')}`;
-          setError(summary);
-        } else {
-          setSuccessMessage(summary);
-          setError(null);
-        }
+        totalCreated += fileCreated;
+        totalUpdated += fileUpdated;
+        globalErrors.push(...fileErrors);
 
-        await fetchApplications();
-        await loadSources();
       } catch (err: any) {
-        setError(err.message || `Failed to process file: ${file.name}`);
+        globalErrors.push(`Failed to process file ${file.name}: ${err.message}`);
       }
     }
+
+    // After processing all files, refresh the list and sources
+    // We do this BEFORE showing the final message to avoid overwriting it with fetch errors.
+    try {
+      await fetchApplications();
+    } catch (fetchErr) {
+      console.error('Error refreshing applications after import:', fetchErr);
+      // Do not overwrite the import error/success message.
+    }
+    try {
+      await loadSources();
+    } catch (sourceErr) {
+      console.error('Error refreshing sources after import:', sourceErr);
+      // Do not overwrite the import error/success message.
+    }
+
+    // Now show the final summary
+    if (globalErrors.length > 0) {
+      const summary = `Import completed with errors. Created: ${totalCreated}, Updated: ${totalUpdated}. Errors: ${globalErrors.join('; ')}`;
+      setError(summary);
+      setSuccessMessage(null); // Clear any success message
+    } else {
+      const summary = `Import successful: ${totalCreated} created, ${totalUpdated} updated.`;
+      setSuccessMessage(summary);
+      setError(null);
+    }
   }, [fetchApplications, loadSources]);
+  // ==================================================
 
   const handleImportFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
