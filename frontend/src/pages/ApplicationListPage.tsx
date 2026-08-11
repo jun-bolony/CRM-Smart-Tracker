@@ -30,7 +30,7 @@ import { ApplicationCardList } from '../components/ApplicationCardList';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
-import { getApplications, deleteApplication, createApplication, updateApplication } from '../services/api';
+import { getApplications, deleteApplication, createApplication, updateApplication, importApplications } from '../services/api';
 import type { Application, ApplicationStatus, ApplicationQueryParams } from '../types/Application';
 import Papa from 'papaparse';
 import { saveFileWithPicker } from '../utils/fileUtils';
@@ -247,14 +247,13 @@ const ApplicationListPage = memo(() => {
     handleExportClose();
   }, [convertToCSV]);
 
-  // ========== UPDATED processImportFiles ==========
+  // ========== UPDATED processImportFiles using importApplications endpoint ==========
   const processImportFiles = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
 
-    // We'll process all files sequentially, collecting results.
-    let globalErrors: string[] = [];
-    let totalCreated = 0;
-    let totalUpdated = 0;
+    // Parse all files into a single array of application data
+    let allApplications: any[] = [];
+    let parseErrors: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -268,12 +267,13 @@ const ApplicationListPage = memo(() => {
           const result = Papa.parse(text, { header: true, skipEmptyLines: true });
           parsedData = result.data;
         } else {
-          globalErrors.push(`Unsupported file format: ${file.name}. Please upload JSON or CSV.`);
+          parseErrors.push(`Unsupported file format: ${file.name}. Please upload JSON or CSV.`);
           continue;
         }
 
-        const applicationsToProcess = parsedData.map((item: any) => {
-          const mapped: any = {};
+        // Map fields to Application structure
+        const mapped = parsedData.map((item: any) => {
+          const mappedApp: any = {};
           const keys = Object.keys(item);
           keys.forEach(key => {
             const lowerKey = key.toLowerCase().trim();
@@ -282,140 +282,107 @@ const ApplicationListPage = memo(() => {
 
             switch (lowerKey) {
               case '_id':
-                mapped._id = String(value);
+                mappedApp._id = String(value);
                 break;
               case 'company':
-                mapped.company = String(value);
+                mappedApp.company = String(value);
                 break;
               case 'position':
-                mapped.position = String(value);
+                mappedApp.position = String(value);
                 break;
               case 'status':
-                mapped.status = String(value);
+                mappedApp.status = String(value);
                 break;
               case 'applieddate':
               case 'applied date':
-                mapped.appliedDate = value;
+                mappedApp.appliedDate = value;
                 break;
               case 'source':
-                mapped.source = String(value);
+                mappedApp.source = String(value);
                 break;
               case 'salarymin':
               case 'salary min':
-                mapped.salaryMin = typeof value === 'number' ? value : parseFloat(value) || undefined;
+                mappedApp.salaryMin = typeof value === 'number' ? value : parseFloat(value) || undefined;
                 break;
               case 'salarymax':
               case 'salary max':
-                mapped.salaryMax = typeof value === 'number' ? value : parseFloat(value) || undefined;
+                mappedApp.salaryMax = typeof value === 'number' ? value : parseFloat(value) || undefined;
                 break;
               case 'url':
-                mapped.url = String(value);
+                mappedApp.url = String(value);
                 break;
               case 'contact name':
-                if (!mapped.contact) mapped.contact = {};
-                mapped.contact.name = String(value);
+                if (!mappedApp.contact) mappedApp.contact = {};
+                mappedApp.contact.name = String(value);
                 break;
               case 'contact email':
-                if (!mapped.contact) mapped.contact = {};
-                mapped.contact.email = String(value);
+                if (!mappedApp.contact) mappedApp.contact = {};
+                mappedApp.contact.email = String(value);
                 break;
               case 'contact phone':
-                if (!mapped.contact) mapped.contact = {};
-                mapped.contact.phone = String(value);
+                if (!mappedApp.contact) mappedApp.contact = {};
+                mappedApp.contact.phone = String(value);
                 break;
               case 'notes':
                 if (Array.isArray(value)) {
-                  mapped.notes = value.map(v => String(v));
+                  mappedApp.notes = value.map(v => String(v));
                 } else if (typeof value === 'string') {
-                  mapped.notes = value.split(';').map(s => s.trim()).filter(Boolean);
+                  mappedApp.notes = value.split(';').map(s => s.trim()).filter(Boolean);
                 } else {
-                  mapped.notes = [];
+                  mappedApp.notes = [];
                 }
                 break;
               case 'nexteventdate':
               case 'next event date':
-                mapped.nextEventDate = value;
+                mappedApp.nextEventDate = value;
+                break;
+              default:
+                // ignore unknown fields
                 break;
             }
           });
 
-          if (!mapped.company || !mapped.position) {
+          if (!mappedApp.company || !mappedApp.position) {
             throw new Error('Each application must have company and position');
           }
-          if (!mapped.status || !statusOptions.includes(mapped.status as ApplicationStatus)) {
-            mapped.status = 'Sent';
+          if (!mappedApp.status || !statusOptions.includes(mappedApp.status as ApplicationStatus)) {
+            mappedApp.status = 'Sent';
           }
-          return mapped;
+          return mappedApp;
         });
 
-        // Fetch existing applications once per file to avoid multiple requests
-        const existingApps = await getApplications({ limit: 10000 });
-
-        let fileErrors: string[] = [];
-        let fileCreated = 0;
-        let fileUpdated = 0;
-
-        for (const appData of applicationsToProcess) {
-          try {
-            let existing: Application | undefined;
-            if (appData._id) {
-              existing = existingApps.find(a => a._id === appData._id);
-            }
-            if (!existing) {
-              existing = existingApps.find(a =>
-                a.company.toLowerCase() === appData.company.toLowerCase() &&
-                a.position.toLowerCase() === appData.position.toLowerCase()
-              );
-            }
-
-            delete appData.statusHistory;
-
-            if (existing) {
-              await updateApplication(existing._id!, appData);
-              fileUpdated++;
-            } else {
-              delete appData._id;
-              await createApplication(appData);
-              fileCreated++;
-            }
-          } catch (err: any) {
-            fileErrors.push(`Failed to process ${appData.company}: ${err.message}`);
-          }
-        }
-
-        totalCreated += fileCreated;
-        totalUpdated += fileUpdated;
-        globalErrors.push(...fileErrors);
-
+        allApplications.push(...mapped);
       } catch (err: any) {
-        globalErrors.push(`Failed to process file ${file.name}: ${err.message}`);
+        parseErrors.push(`Error parsing file ${file.name}: ${err.message}`);
       }
     }
 
-    // After processing all files, refresh the list and sources
-    // We do this BEFORE showing the final message to avoid overwriting it with fetch errors.
-    try {
-      await fetchApplications();
-    } catch (fetchErr) {
-      console.error('Error refreshing applications after import:', fetchErr);
-      // Do not overwrite the import error/success message.
-    }
-    try {
-      await loadSources();
-    } catch (sourceErr) {
-      console.error('Error refreshing sources after import:', sourceErr);
-      // Do not overwrite the import error/success message.
+    if (allApplications.length === 0) {
+      const errorMsg = parseErrors.length > 0 ? parseErrors.join('; ') : 'No valid applications found in the uploaded files.';
+      setError(errorMsg);
+      return;
     }
 
-    // Now show the final summary
-    if (globalErrors.length > 0) {
-      const summary = `Import completed with errors. Created: ${totalCreated}, Updated: ${totalUpdated}. Errors: ${globalErrors.join('; ')}`;
-      setError(summary);
-      setSuccessMessage(null); // Clear any success message
-    } else {
-      const summary = `Import successful: ${totalCreated} created, ${totalUpdated} updated.`;
-      setSuccessMessage(summary);
-      setError(null);
+    // Send all applications to the new import endpoint
+    try {
+      const result = await importApplications(allApplications);
+      // result contains { created: Application[], message?: string }
+      const createdCount = result.created ? result.created.length : 0;
+      const message = result.message || `Successfully imported ${createdCount} applications.`;
+      if (parseErrors.length > 0) {
+        setError(`Import completed with warnings. ${message} Warnings: ${parseErrors.join('; ')}`);
+        setSuccessMessage(null);
+      } else {
+        setSuccessMessage(message);
+        setError(null);
+      }
+      await fetchApplications();
+      await loadSources();
+    } catch (err: any) {
+      // Handle error from import endpoint (e.g., validation error, limit exceeded)
+      const errorMsg = err.message || 'Import failed. Please check your file format and data.';
+      setError(errorMsg);
+      setSuccessMessage(null);
     }
   }, [fetchApplications, loadSources]);
   // ==================================================

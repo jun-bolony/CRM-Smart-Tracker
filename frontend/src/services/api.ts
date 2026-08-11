@@ -84,3 +84,8 @@ export const getSources = (): Promise<string[]> => {
 export const bulkCreateApplications = (applications: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>[]): Promise<Application[]> => {
   return apiClient.post('/api/applications/bulk', { applications });
 };
+
+// ========== NEW: importApplications for mass import ==========
+export const importApplications = (applications: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>[]): Promise<{ created: Application[]; message?: string }> => {
+  return apiClient.post('/api/applications/import', { applications });
+};
