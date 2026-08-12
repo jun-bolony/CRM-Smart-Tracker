@@ -7,8 +7,9 @@ const {
   createApplication,
   updateApplication,
   deleteApplication,
-  createBulkApplications   // NEW
+  createBulkApplications
 } = require('../controllers/applications');
+const asyncHandler = require('../utils/asyncHandler');
 
 // Middleware for checking the validity of ObjectId (can be moved to a separate middleware)
 const { isValidObjectId } = require('mongoose');
@@ -24,13 +25,13 @@ const validateId = (req, res, next) => {
 };
 
 // CRUD routes
-router.get('/', getAllApplications);
-router.post('/', createApplication);
-router.get('/:id', validateId, getApplicationById);
-router.put('/:id', validateId, updateApplication);
-router.delete('/:id', validateId, deleteApplication);
+router.get('/', asyncHandler(getAllApplications));
+router.post('/', asyncHandler(createApplication));
+router.get('/:id', validateId, asyncHandler(getApplicationById));
+router.put('/:id', validateId, asyncHandler(updateApplication));
+router.delete('/:id', validateId, asyncHandler(deleteApplication));
 
-// NEW: Bulk create
-router.post('/bulk', createBulkApplications);
+// Bulk create
+router.post('/bulk', asyncHandler(createBulkApplications));
 
 module.exports = router;
