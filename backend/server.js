@@ -8,22 +8,41 @@ const helmet = require('helmet');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // ---------- Security Headers (Helmet) ----------
 app.use(helmet());
 // -----------------------------------------------
 
 // ---------- CORS ----------
-// Allow only the frontend URL specified in environment variables.
-// For development, you can set FRONTEND_URL to 'http://localhost:5173' etc.
-const allowedOrigins = process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL]
-  : ['http://localhost:5173', 'http://localhost:3000']; // fallback for local dev
+// Determine allowed origins based on environment
+let allowedOrigins = [];
+if (NODE_ENV === 'production') {
+  // In production, allow only the frontend URL specified in environment
+  const frontendUrl = process.env.FRONTEND_URL;
+  if (!frontendUrl) {
+    console.error('FATAL: FRONTEND_URL environment variable is not set in production.');
+    process.exit(1);
+  }
+  allowedOrigins = [frontendUrl];
+} else {
+  // In development, allow localhost origins for testing
+  allowedOrigins = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ];
+  // Also allow if developer explicitly set FRONTEND_URL for development
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+}
 
 app.use(
   cors({
     origin: allowedOrigins,
-    credentials: true, // if you need to send cookies/authorization headers
+    credentials: true, // required for JWT cookies / Authorization headers
   })
 );
 // --------------------------
@@ -95,5 +114,5 @@ const errorHandler = require('./middleware/errorHandler');
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
+  console.log(`Server is listening on port ${PORT} in ${NODE_ENV} mode`);
 });

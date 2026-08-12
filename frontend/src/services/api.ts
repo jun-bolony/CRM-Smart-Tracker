@@ -2,8 +2,14 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import type { Application, ApplicationQueryParams, StatsData } from '../types/Application';
 
+// In development, use empty baseURL so requests go through Vite proxy.
+// In production, use the full backend URL from environment.
+const baseURL = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL || 'https://your-backend.onrender.com'
+  : '';
+
 const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },
