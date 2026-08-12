@@ -7,6 +7,8 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GlobalNavBar } from './components/GlobalNavBar';
+import { useBackendHealth } from './hooks/useBackendHealth';
+import { WakeUpScreen } from './components/WakeUpScreen';
 
 const ApplicationListPage = lazy(() => import('./pages/ApplicationListPage'));
 const ApplicationFormPage = lazy(() => import('./pages/ApplicationFormPage'));
@@ -40,7 +42,6 @@ const AppRoutes = () => {
 };
 
 const AppContent = () => {
-  // Using a static theme as toggle functionality is removed
   const theme = createTheme({ palette: { mode: 'light' } });
 
   return (
@@ -93,9 +94,15 @@ const AppContent = () => {
 };
 
 function App() {
+  const { isBackendReady, secondsLeft, isWaiting } = useBackendHealth();
+
   return (
     <ErrorBoundary>
-      <AppContent />
+      {!isBackendReady ? (
+        <WakeUpScreen secondsLeft={secondsLeft} isWaiting={isWaiting} />
+      ) : (
+        <AppContent />
+      )}
     </ErrorBoundary>
   );
 }

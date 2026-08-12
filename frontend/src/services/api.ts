@@ -90,3 +90,19 @@ export const getSources = (): Promise<string[]> => {
 export const bulkCreateApplications = (applications: Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>[]): Promise<Application[]> => {
   return apiClient.post('/api/applications/bulk', { applications });
 };
+
+// Health check function (uses fetch to avoid interceptors and token injection)
+export const checkHealth = (signal?: AbortSignal): Promise<void> => {
+  const url = import.meta.env.PROD
+    ? `${import.meta.env.VITE_API_URL}/api/health`
+    : '/api/health';
+  return fetch(url, {
+    method: 'GET',
+    signal,
+  }).then((response) => {
+    if (!response.ok) {
+      throw new Error('Health check failed');
+    }
+    return response.json();
+  }).then(() => undefined);
+};

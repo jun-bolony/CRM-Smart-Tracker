@@ -86,6 +86,12 @@ app.use('/api/applications', apiLimiter);
 app.use('/api/stats', apiLimiter);
 // ------------------------------------
 
+// ---------- Health Check Endpoint (for wake-up and monitoring) ----------
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+// ------------------------------------------------------------------------
+
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/test')
   .then(() => console.log('MongoDB connected'))
