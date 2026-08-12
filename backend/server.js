@@ -87,10 +87,8 @@ app.use('/api/stats', apiLimiter);
 // ------------------------------------
 
 // ---------- Health Check Endpoint (for wake-up and monitoring) ----------
-// Returns minimal plain text to keep response size tiny
 app.get('/api/health', (req, res) => {
-  res.set('Content-Type', 'text/plain');
-  res.status(200).send('ok');
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 // ------------------------------------------------------------------------
 
