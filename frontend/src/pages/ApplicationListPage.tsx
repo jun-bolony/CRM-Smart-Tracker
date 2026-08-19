@@ -1,4 +1,6 @@
+// frontend/src/pages/ApplicationListPage.tsx
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Button,
@@ -75,7 +77,6 @@ const ApplicationListPage = memo(() => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
 
-  // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     return (localStorage.getItem('crm_view_preference') as 'card' | 'list') || 'card';
   });
@@ -136,7 +137,7 @@ const ApplicationListPage = memo(() => {
     return () => clearTimeout(timer);
   }, [fetchApplications]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => setSearch(e.target.value);
   const handleStatusChange = (e: SelectChangeEvent<typeof statusFilter>) => {
     const value = e.target.value;
     setStatusFilter(typeof value === 'string' ? value.split(',') : value);
@@ -182,7 +183,7 @@ const ApplicationListPage = memo(() => {
     setDeleteId(null);
   };
 
-  const handleExportClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleExportClick = (event: MouseEvent<HTMLButtonElement>) => {
     setExportAnchorEl(event.currentTarget);
   };
 
@@ -247,7 +248,6 @@ const ApplicationListPage = memo(() => {
     handleExportClose();
   }, [convertToCSV]);
 
-  // ========== UPDATED processImportFiles with batching ==========
   const processImportFiles = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
 
@@ -348,10 +348,8 @@ const ApplicationListPage = memo(() => {
           return mapped;
         });
 
-        // Fetch existing applications once per file
         const existingApps = await getApplications({ limit: 10000 });
 
-        // Process in batches
         const batches = [];
         for (let j = 0; j < applicationsToProcess.length; j += BATCH_SIZE) {
           batches.push(applicationsToProcess.slice(j, j + BATCH_SIZE));
@@ -386,7 +384,6 @@ const ApplicationListPage = memo(() => {
                 fileCreated++;
               }
             } catch (err: any) {
-              // We'll collect errors per batch and then aggregate
               return { error: `Failed to process ${appData.company}: ${err.message}` };
             }
             return null;
@@ -406,7 +403,6 @@ const ApplicationListPage = memo(() => {
       }
     }
 
-    // Refresh data after all files processed
     try {
       await fetchApplications();
     } catch (fetchErr) {
@@ -418,7 +414,6 @@ const ApplicationListPage = memo(() => {
       console.error('Error refreshing sources after import:', sourceErr);
     }
 
-    // Show final summary
     if (globalErrors.length > 0) {
       const summary = `Import completed with errors. Created: ${totalCreated}, Updated: ${totalUpdated}. Errors: ${globalErrors.join('; ')}`;
       setError(summary);
@@ -429,9 +424,8 @@ const ApplicationListPage = memo(() => {
       setError(null);
     }
   }, [fetchApplications, loadSources]);
-  // ==================================================
 
-  const handleImportFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportFileInputChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       await processImportFiles(files);
@@ -483,24 +477,16 @@ const ApplicationListPage = memo(() => {
           height: '100%',
           width: '100%',
           boxSizing: 'border-box',
+          backgroundColor: 'transparent',
         }}
       >
-        <Box
-          sx={{
-            width: { xs: 98, sm: 122, md: 146 },
-            flexShrink: 0,
-            height: '100%',
-            background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
-          }}
-        />
-
         <Box
           sx={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            backgroundColor: 'background.default',
+            backgroundColor: 'transparent',
             overflow: 'hidden',
           }}
         >
@@ -898,15 +884,6 @@ const ApplicationListPage = memo(() => {
             </DragDropImport>
           </Box>
         </Box>
-
-        <Box
-          sx={{
-            width: { xs: 98, sm: 122, md: 146 },
-            flexShrink: 0,
-            height: '100%',
-            background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
-          }}
-        />
       </Box>
     </>
   );

@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { GlobalNavBar } from './components/GlobalNavBar';
 import { useBackendHealth } from './hooks/useBackendHealth';
 import { WakeUpScreen } from './components/WakeUpScreen';
+import { GlobalGradientWrapper } from './components/GlobalGradientWrapper';
 
 const ApplicationListPage = lazy(() => import('./pages/ApplicationListPage'));
 const ApplicationFormPage = lazy(() => import('./pages/ApplicationFormPage'));
@@ -24,19 +25,21 @@ const AppRoutes = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden' }}>
       {!hideNav && <GlobalNavBar />}
-      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <Suspense fallback={<LoadingSpinner fullScreen />}>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/" element={<ProtectedRoute><ApplicationListPage /></ProtectedRoute>} />
-            <Route path="/new" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
-            <Route path="/edit/:id" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
-            <Route path="/detail/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          </Routes>
-        </Suspense>
-      </Box>
+      <GlobalGradientWrapper>
+        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <Suspense fallback={<LoadingSpinner fullScreen />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/" element={<ProtectedRoute><ApplicationListPage /></ProtectedRoute>} />
+              <Route path="/new" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
+              <Route path="/edit/:id" element={<ProtectedRoute><ApplicationFormPage /></ProtectedRoute>} />
+              <Route path="/detail/:id" element={<ProtectedRoute><ApplicationDetailPage /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            </Routes>
+          </Suspense>
+        </Box>
+      </GlobalGradientWrapper>
     </Box>
   );
 };

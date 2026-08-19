@@ -1,47 +1,58 @@
+// frontend/src/pages/Dashboard.tsx
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Typography,
   Box,
-  Card,
-  CardContent,
   CircularProgress,
   Button,
   Tooltip,
   Snackbar,
   Alert,
+  Paper,
+  Divider,
 } from '@mui/material';
 import { ArrowBack, GetApp as DownloadIcon } from '@mui/icons-material';
 import type { StatsData } from '../types/Application';
 import { getStats } from '../services/api';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import {
-  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, FunnelChart, Funnel, LabelList,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  FunnelChart,
+  Funnel,
+  LabelList,
 } from 'recharts';
 import html2canvas from 'html2canvas';
 import { saveFileWithPicker } from '../utils/fileUtils';
 
 const statusColors: Record<string, string> = {
   Sent: '#2196f3',
-  Viewed: '#64b5f6',
-  Interview: '#ff9800',
+  Viewed: '#6FD1E2',
+  Interview: '#A37BE0',
   Test: '#ffc107',
   Offer: '#4caf50',
   Rejected: '#f44336',
   Archived: '#9e9e9e',
 };
 
-const CHART_COLORS = ['#2196f3', '#64b5f6', '#ff9800', '#ffc107', '#4caf50', '#f44336', '#9e9e9e'];
+const CHART_COLORS = ['#2196f3', '#6FD1E2', '#A37BE0', '#ffc107', '#4caf50', '#f44336', '#9e9e9e'];
 
-// Custom scrollbar styling to match the requested design
 const pageScrollbarSx = {
   width: '100%',
   height: '100%',
   overflowY: 'auto',
   '&::-webkit-scrollbar': {
-    width: '14px',
+    width: '10px',
   },
   '&::-webkit-scrollbar-track': {
     backgroundColor: '#f1f1f1',
@@ -49,25 +60,11 @@ const pageScrollbarSx = {
   '&::-webkit-scrollbar-thumb': {
     backgroundColor: '#c1c1c1',
     borderRadius: '8px',
-    border: '3px solid #f1f1f1',
+    border: '2px solid #f1f1f1',
     backgroundClip: 'padding-box',
   },
   '&::-webkit-scrollbar-thumb:hover': {
     backgroundColor: '#a8a8a8',
-  },
-  '&::-webkit-scrollbar-button:vertical:decrement': {
-    display: 'block',
-    height: '14px',
-    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 14l5-5 5 5z\'/></svg>")',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  },
-  '&::-webkit-scrollbar-button:vertical:increment': {
-    display: 'block',
-    height: '14px',
-    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
   },
 };
 
@@ -109,7 +106,6 @@ const Dashboard = () => {
       if (result.success) {
         setSuccessMessage(`Dashboard saved successfully as ${result.fileName || suggestedName}`);
       }
-      // If cancelled, do nothing
     } catch (err) {
       setError('Failed to save image');
     }
@@ -138,135 +134,175 @@ const Dashboard = () => {
   const { statusDistribution, timeline, topSources, funnel, totalApplications, offerCount, offerRate } = stats;
   const pieData = statusDistribution.length > 0 ? statusDistribution : [{ name: 'No data', value: 1 }];
 
+  const renderFunnelLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const stageData = funnel[index];
+    
+    if (!stageData) return null;
+    
+    const stageName = stageData.stage;
+    const stageCount = stageData.count;
+    
+    const labelColor = stageName && statusColors[stageName]
+      ? statusColors[stageName]
+      : CHART_COLORS[index % CHART_COLORS.length];
+
+    return (
+      <text
+        x={x + width + 10}
+        y={y + height / 2}
+        fill={labelColor}
+        dominantBaseline="central"
+        fontSize={13}
+        fontWeight="bold"
+      >
+        {`— ${stageCount}`}
+      </text>
+    );
+  };
+
   return (
     <Box sx={pageScrollbarSx}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Back button and Save as Image button */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Button startIcon={<ArrowBack />} onClick={() => navigate('/')}>
-            Back
+      <Container maxWidth="lg" sx={{ py: 1.5, px: { xs: 2, md: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+          <Button 
+            startIcon={<ArrowBack />} 
+            onClick={() => navigate('/')}
+            sx={{ fontWeight: 'bold' }}
+          >
+            BACK
           </Button>
-          <Tooltip title="Save the entire dashboard as a PNG image for backup or sharing.">
+          <Tooltip title="Save the entire dashboard as a PNG image.">
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={handleSaveAsImage}
+              sx={{ fontWeight: 'bold' }}
             >
-              Save as Image
+              SAVE AS IMAGE
             </Button>
           </Tooltip>
         </Box>
 
-        <Typography variant="h4" gutterBottom>
-          Dashboard
-        </Typography>
+        <Divider sx={{ mb: 1 }} />
 
-        {/* Wrapper for screenshot */}
-        <div ref={dashboardRef}>
-          {/* Summary Cards */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-            <Card sx={{ flex: '1 1 200px', minWidth: 150 }}>
-              <CardContent>
-                <Typography color="textSecondary" variant="subtitle2">Total Applications</Typography>
-                <Typography variant="h4">{totalApplications}</Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ flex: '1 1 200px', minWidth: 150 }}>
-              <CardContent>
-                <Typography color="textSecondary" variant="subtitle2">Offers</Typography>
-                <Typography variant="h4">{offerCount}</Typography>
-              </CardContent>
-            </Card>
-            <Card sx={{ flex: '1 1 200px', minWidth: 150 }}>
-              <CardContent>
-                <Typography color="textSecondary" variant="subtitle2">Offer Rate</Typography>
-                <Typography variant="h4">{offerRate}%</Typography>
-              </CardContent>
-            </Card>
+        <div ref={dashboardRef} style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '16px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 1.5 }}>
+            <Paper
+              elevation={0}
+              sx={{
+                display: 'flex',
+                border: '1px solid #e0e0e0',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff'
+              }}
+            >
+              <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Total Applications</Typography>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{totalApplications}</Typography>
+              </Box>
+              <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Offers</Typography>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{offerCount}</Typography>
+              </Box>
+              <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center' }}>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Offer Rate</Typography>
+                <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{offerRate}%</Typography>
+              </Box>
+            </Paper>
           </Box>
 
-          {/* Charts Row 1: Pie and Bar */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, mb: 4 }}>
-            <Box sx={{ flex: '1 1 45%', minWidth: 300 }}>
-              <Typography variant="h6" gutterBottom>Status Distribution</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                </PieChart>
-              </ResponsiveContainer>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1.5, mb: 1.5 }}>
+            <Box sx={{ flex: 1, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Status Distribution</Typography>
+              <Box sx={{ height: 200 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="53%"
+                      outerRadius={70}
+                      label
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
             </Box>
 
-            <Box sx={{ flex: '1 1 45%', minWidth: 300 }}>
-              <Typography variant="h6" gutterBottom>Top Sources</Typography>
-              {topSources.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={topSources} layout="vertical" margin={{ left: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis type="category" dataKey="source" />
+            <Box sx={{ flex: 1.4, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Applications Over Time (Last 30 Days)</Typography>
+              <Box sx={{ height: 200 }}>
+                {timeline.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                      <Bar dataKey="count" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Typography sx={{ textAlign: 'center', mt: 8 }}>No timeline data</Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Box sx={{ flex: 1.1, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Top Sources</Typography>
+              <Box sx={{ height: 200 }}>
+                {topSources.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topSources} layout="vertical" margin={{ top: 10, right: 25, left: -15, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="source" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                      <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]}>
+                        <LabelList dataKey="count" position="right" style={{ fontSize: 10 }} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <Typography sx={{ textAlign: 'center', mt: 8 }}>No source data</Typography>
+                )}
+              </Box>
+            </Box>
+          </Box>
+
+          <Box sx={{ mx: { xs: 0, md: '170px' }, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 2 }}>
+            <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 2, fontSize: '0.85rem' }}>Funnel (Applications reaching each stage)</Typography>
+            <Box sx={{ height: 190 }}>
+              {funnel.some(item => item.count > 0) ? (
+                <ResponsiveContainer width="100%" height="108%">
+                  <FunnelChart margin={{ top: -5, right: 40, left: 20, bottom: 10 }}>
                     <RechartsTooltip />
-                    <Bar dataKey="count" fill="#8884d8">
-                      <LabelList dataKey="count" position="right" />
-                    </Bar>
-                  </BarChart>
+                    <Funnel
+                      data={funnel}
+                      dataKey="count"
+                      nameKey="stage"
+                      isAnimationActive
+                    >
+                      <LabelList content={renderFunnelLabel} />
+                      {funnel.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={statusColors[entry.stage] || CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Funnel>
+                  </FunnelChart>
                 </ResponsiveContainer>
               ) : (
-                <Typography>No source data</Typography>
+                <Typography sx={{ textAlign: 'center', mt: 6 }}>No funnel data</Typography>
               )}
             </Box>
-          </Box>
-
-          {/* Timeline Chart */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h6" gutterBottom>Applications Over Time (Last 30 Days)</Typography>
-            {timeline.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timeline} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <Typography>No timeline data</Typography>
-            )}
-          </Box>
-
-          {/* Funnel Chart */}
-          <Box>
-            <Typography variant="h6" gutterBottom>Funnel (Applications reaching each stage)</Typography>
-            {funnel.some(item => item.count > 0) ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <FunnelChart>
-                  <RechartsTooltip />
-                  <Funnel
-                    data={funnel}
-                    dataKey="count"
-                    nameKey="stage"
-                    isAnimationActive
-                  >
-                    <LabelList position="right" fill="#000" stroke="none" dataKey="count" />
-                  </Funnel>
-                </FunnelChart>
-              </ResponsiveContainer>
-            ) : (
-              <Typography>No funnel data</Typography>
-            )}
           </Box>
         </div>
 
