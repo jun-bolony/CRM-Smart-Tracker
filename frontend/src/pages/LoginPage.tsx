@@ -36,54 +36,73 @@ const LoginPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Sign In
-        </Typography>
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            slotProps={{ inputLabel: { shrink: true } }}
-          />
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            fullWidth
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </Button>
-          <Box sx={{ textAlign: 'center', mt: 1 }}>
-            <Typography variant="body2">
-              Don't have an account?{' '}
-              <Link component={RouterLink} to="/register">
-                Sign Up
-              </Link>
-            </Typography>
+    // Background wrapper covering full viewport with complex gradient background
+    <Box
+      sx={{
+        height: '100vh',
+        width: '100vw',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // Linear gradient (triple gradient approx): yellow-ish -> green-ish -> blue-ish
+        background: 'linear-gradient(135deg, #f9f8c4 0%, #86b6a0 50%, #77a1d3 100%)',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden', // Prevent background scrolling
+      }}
+    >
+      <Container maxWidth="sm">
+        <Paper sx={{ p: 4, borderRadius: 2 }}>
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ color: '#8E8E8E' }}>
+			Sign In
+          </Typography>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+              // Rule 3.4: Applying slotProps to shrink label initially, as seen on desired image
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <TextField
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              disabled={loading}
+              sx={{ py: 1.2, fontWeight: 'bold' }} // Slight visual styling to match image boldness
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+            <Box sx={{ textAlign: 'center', mt: 1 }}>
+              <Typography variant="body2">
+                Don't have an account?{' '}
+                <Link component={RouterLink} to="/register">
+                  Sign Up
+                </Link>
+              </Typography>
+            </Box>
           </Box>
-        </Box>
-      </Paper>
-    </Container>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

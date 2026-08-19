@@ -32,7 +32,7 @@ export const GlobalGradientWrapper: FC<GlobalGradientWrapperProps> = ({ children
           width: { xs: 98, sm: 122, md: 146 },
           flexShrink: 0,
           height: '100%',
-          background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
+          background: 'linear-gradient(135deg, #DBCE97 20%, #8CAF94 45%, #6788B5 100%)',
         }}
       />
       
@@ -56,7 +56,7 @@ export const GlobalGradientWrapper: FC<GlobalGradientWrapperProps> = ({ children
           width: { xs: 98, sm: 122, md: 146 },
           flexShrink: 0,
           height: '100%',
-          background: 'linear-gradient(135deg, #DDCD82 20%, #83BA82 45%, #4E79BA 100%)',
+          background: 'linear-gradient(135deg, #DBCE97 20%, #8CAF94 45%, #6788B5 100%)',
         }}
       />
     </Box>
