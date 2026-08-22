@@ -521,7 +521,8 @@ const ApplicationDetailPage = () => {
               
               {/* Notes Half */}
               <Box sx={{ flex: 1, pr: { md: 2 } }}>
-                <Typography variant="h6" gutterBottom textAlign="center">Notes</Typography>
+                {/* FIXED: moved textAlign to sx */}
+                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Notes</Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                   <TextField
@@ -568,7 +569,8 @@ const ApplicationDetailPage = () => {
 
               {/* Status History Half */}
               <Box sx={{ flex: 1, pl: { md: 2 } }}>
-                <Typography variant="h6" gutterBottom textAlign="center">Status History</Typography>
+                {/* FIXED: moved textAlign to sx */}
+                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Status History</Typography>
                 {application.statusHistory && application.statusHistory.length > 0 ? (
                   <List dense sx={{ 
                     maxHeight: '350px', 
