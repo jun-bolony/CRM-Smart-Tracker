@@ -13,12 +13,17 @@ export const WakeUpScreen = ({ secondsLeft, isWaiting }: WakeUpScreenProps) => {
   return (
     <Box
       sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        margin: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100vh',
-        width: '100vw',
         backgroundColor: 'rgba(0,0,0,0.05)',
+        zIndex: 9999,
       }}
     >
       <Paper
