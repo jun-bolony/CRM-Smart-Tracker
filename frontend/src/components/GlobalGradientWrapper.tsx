@@ -3,6 +3,8 @@ import { Box } from '@mui/material';
 import { useLocation } from 'react-router-dom';
 import type { FC, ReactNode } from 'react';
 
+const GRADIENT_HIDE_BREAKPOINT = 'xs'; // Breakpoint at which gradient bars disappear
+
 interface GlobalGradientWrapperProps {
   children: ReactNode;
 }
@@ -29,7 +31,7 @@ export const GlobalGradientWrapper: FC<GlobalGradientWrapperProps> = ({ children
       {/* Left Gradient Bar */}
       <Box
         sx={{
-          width: { xs: 98, sm: 122, md: 146 },
+          width: { [GRADIENT_HIDE_BREAKPOINT]: 0, sm: 40, md: 80, lg: 146 },
           flexShrink: 0,
           height: '100%',
           background: 'linear-gradient(135deg, #DBCE97 20%, #8CAF94 45%, #6788B5 100%)',
@@ -53,7 +55,7 @@ export const GlobalGradientWrapper: FC<GlobalGradientWrapperProps> = ({ children
       {/* Right Gradient Bar */}
       <Box
         sx={{
-          width: { xs: 98, sm: 122, md: 146 },
+          width: { [GRADIENT_HIDE_BREAKPOINT]: 0, sm: 40, md: 80, lg: 146 },
           flexShrink: 0,
           height: '100%',
           background: 'linear-gradient(135deg, #DBCE97 20%, #8CAF94 45%, #6788B5 100%)',
