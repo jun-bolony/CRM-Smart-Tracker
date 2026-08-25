@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Button, Box } from '@mui/material';
+import { Container, Button, Box, Divider, Typography } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import type { Application } from '../types/Application';
 import { getApplication, createApplication, updateApplication } from '../services/api';
@@ -106,29 +106,71 @@ const ApplicationFormPage = () => {
     );
   }
 
+  // New rendering structure
   return (
     <Box sx={pageScrollbarSx}>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Button
-          startIcon={<ArrowBack />}
-          onClick={handleCancel}
-          sx={{ mb: 2 }}
-        >
-          Back
-        </Button>
+      {/* Outer wrapper box with padding (reduced from p:4 to p:2) */}
+      <Box sx={{ p: 2 }}>
+        {/* ToolBar box for Back button and title (3-column layout for centering title) */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          {/* Column 1: Back Button */}
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: '0 0 auto' }}>
+            <Button
+              startIcon={<ArrowBack />}
+              onClick={handleCancel}
+              sx={{
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                },
+              }}
+            >
+              Back
+            </Button>
+          </Box>
+          {/* Column 2: Typography Title */}
+          <Box sx={{ flex: '1 1 auto', textAlign: 'center' }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 'normal',
+                textAlign: 'center',
+              }}
+            >
+              {isEdit ? 'Edit Application' : 'Create Application'}
+            </Typography>
+          </Box>
+          {/* Column 3: Empty space (matches Column 1 width) */}
+          <Box sx={{ flex: '0.1 0 auto' }} />
+        </Box>
 
-        <ApplicationForm
-          initialData={initialData || undefined}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          isEdit={isEdit}
-        />
-        <ErrorSnackbar
-          open={!!error}
-          message={error || ''}
-          onClose={() => setError(null)}
-        />
-      </Container>
+        {/* Divider */}
+        <Divider sx={{ mb: 1 }} />
+
+        {/* Container for the form, centered with maxWidth="md" and reduced padding */}
+        <Container
+          maxWidth="md" // Changed from "lg" to "md" to limit width
+          sx={{
+            p: 2, // Reduced from p:4 to p:2
+            bgcolor: 'background.paper', // Background color for form
+            borderRadius: 2, // Rounded corners
+            boxShadow: 1, // Shadow
+          }}
+        >
+          {/* application form and error snackbar */}
+          <ApplicationForm
+            initialData={initialData || undefined}
+            onSubmit={handleSubmit}
+            onCancel={handleCancel}
+            isEdit={isEdit}
+          />
+          <ErrorSnackbar
+            open={!!error}
+            message={error || ''}
+            onClose={() => setError(null)}
+          />
+        </Container>
+      </Box>
     </Box>
   );
 };

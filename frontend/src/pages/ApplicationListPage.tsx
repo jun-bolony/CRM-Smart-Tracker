@@ -49,7 +49,7 @@ const statusOptions: ApplicationStatus[] = [
 ];
 
 const filterInputSx = {
-  background: 'linear-gradient(0deg, #f5f5f5 0%, #ffffff 100%)',
+  background: 'linear-gradient(0deg, #f5f5f5 0%, #ffffff 0%)',
   color: 'text.primary',
   borderRadius: 1,
   '& .MuiOutlinedInput-notchedOutline': {
@@ -725,10 +725,10 @@ const ApplicationListPage = memo(() => {
                               fontWeight: 'bold', 
                               color: '#58A4E8',
                               border: '1px solid #4fc3f7',
-                              background: 'linear-gradient(90deg, #e1f5fe 0%, #ffffff 100%)',
+                              background: 'linear-gradient(150deg, #e1f5fe 0%, #ffffff 60%)',
                               '&:hover': {
                                 border: '1px solid #29b6f6',
-                                background: 'linear-gradient(90deg, #b3e5fc 0%, #ffffff 100%)',
+                                background: 'linear-gradient(150deg, #b3e5fc 0%, #ffffff 80%)',
                               }
                             }}
                           >
