@@ -20,6 +20,7 @@ import {
   Tooltip,
   Snackbar,
   Alert,
+  useMediaQuery,
 } from '@mui/material';
 import { ArrowBack, GetApp, CloudUpload, Edit, Delete } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
@@ -175,6 +176,7 @@ const CharacteristicsLabel = ({ label }: { label: string }) => (
 const ApplicationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -363,29 +365,41 @@ const ApplicationDetailPage = () => {
   return (
     <Box sx={pageScrollbarSx}>
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        {/* Toolbar with conditionally hidden button text on mobile */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          mb: 1,
+          '& .MuiButton-root': { 
+            minWidth: 0, 
+            paddingLeft: { xs: 1, sm: 2 }, 
+            paddingRight: { xs: 1, sm: 2 },
+            flexShrink: 0,
+          }
+        }}>
           <Button onClick={handleBack} startIcon={<ArrowBack />}>
-            Back to list
+            {!isMobile && 'Back to list'}
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Edit this application">
               <Button startIcon={<Edit />} onClick={handleEdit}>
-                Edit
+                {!isMobile && 'Edit'}
               </Button>
             </Tooltip>
             <Tooltip title="Delete this application">
               <Button startIcon={<Delete />} onClick={handleDeleteClick} color="error">
-                Delete
+                {!isMobile && 'Delete'}
               </Button>
             </Tooltip>
             <Tooltip title="Export this application for backup or sharing.">
               <Button startIcon={<GetApp />} onClick={handleExport}>
-                Export
+                {!isMobile && 'Export'}
               </Button>
             </Tooltip>
             <Tooltip title="Import from JSON to update this application.">
               <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
-                Import
+                {!isMobile && 'Import'}
               </Button>
             </Tooltip>
             <input
@@ -521,7 +535,6 @@ const ApplicationDetailPage = () => {
               
               {/* Notes Half */}
               <Box sx={{ flex: 1, pr: { md: 2 } }}>
-                {/* FIXED: moved textAlign to sx */}
                 <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Notes</Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
@@ -569,7 +582,6 @@ const ApplicationDetailPage = () => {
 
               {/* Status History Half */}
               <Box sx={{ flex: 1, pl: { md: 2 } }}>
-                {/* FIXED: moved textAlign to sx */}
                 <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Status History</Typography>
                 {application.statusHistory && application.statusHistory.length > 0 ? (
                   <List dense sx={{ 

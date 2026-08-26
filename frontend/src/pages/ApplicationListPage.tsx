@@ -478,6 +478,7 @@ const ApplicationListPage = memo(() => {
           width: '100%',
           boxSizing: 'border-box',
           backgroundColor: 'transparent',
+          overflowY: 'auto', // Added: allow page scrolling
         }}
       >
         <Box
@@ -485,9 +486,9 @@ const ApplicationListPage = memo(() => {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            height: '100%',
+            minHeight: '100%', // Changed from height: '100%'
             backgroundColor: 'transparent',
-            overflow: 'hidden',
+            overflow: 'visible', // Changed from overflow: 'hidden'
           }}
         >
           <Box
@@ -496,7 +497,7 @@ const ApplicationListPage = memo(() => {
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden',
+              overflow: 'visible', // Changed from overflow: 'hidden'
               backgroundColor: 'background.default',
               minHeight: 0,
             }}
@@ -513,8 +514,8 @@ const ApplicationListPage = memo(() => {
                   flexDirection: 'column',
                   flex: 1,
                   minHeight: 0,
-                  height: '100%',
-                  overflow: 'hidden',
+                  minHeight: '100%', // Changed from height: '100%'
+                  overflow: 'visible', // Changed from overflow: 'hidden'
                 }}
               >
                 <Box 
