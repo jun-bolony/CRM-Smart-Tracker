@@ -513,8 +513,7 @@ const ApplicationListPage = memo(() => {
                   display: 'flex',
                   flexDirection: 'column',
                   flex: 1,
-                  minHeight: 0,
-                  minHeight: '100%', // Changed from height: '100%'
+                  minHeight: '100%', // Removed duplicate minHeight: 0
                   overflow: 'visible', // Changed from overflow: 'hidden'
                 }}
               >
