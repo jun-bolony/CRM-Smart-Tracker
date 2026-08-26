@@ -67,23 +67,25 @@ const AppContent = () => {
             display: 'flex',
             flexDirection: 'column',
           },
-          '.table-scroll-container': {
+          // Unified scrollbar styles for all scroll containers
+          '.table-scroll-container, .dashboard-scroll-container, .detail-scroll-container': {
             scrollbarWidth: 'thin',
-            scrollbarColor: '#c1c1c1 transparent',
-          },
-          '.table-scroll-container::-webkit-scrollbar': {
-            width: '6px',
-            height: '6px',
-          },
-          '.table-scroll-container::-webkit-scrollbar-track': {
-            background: 'transparent',
-          },
-          '.table-scroll-container::-webkit-scrollbar-thumb': {
-            background: '#c1c1c1',
-            borderRadius: '3px',
-          },
-          '.table-scroll-container::-webkit-scrollbar-thumb:hover': {
-            background: '#a8a8a8',
+            scrollbarColor: '#c1c1c1 #f1f1f1',
+            '&::-webkit-scrollbar': {
+              width: '10px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: '#f1f1f1',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#c1c1c1',
+              borderRadius: '8px',
+              border: '2px solid #f1f1f1',
+              backgroundClip: 'padding-box',
+            },
+            '&::-webkit-scrollbar-thumb:hover': {
+              backgroundColor: '#a8a8a8',
+            },
           },
         }}
       />

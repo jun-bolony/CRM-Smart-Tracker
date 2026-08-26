@@ -44,7 +44,7 @@ export interface ApplicationQueryParams {
   status?: string; // comma-separated statuses, e.g. "Sent,Viewed"
   source?: string;
   search?: string;
-  sortBy?: 'appliedDate' | 'nextEventDate' | 'salaryMax';
+  sortBy?: 'appliedDate' | 'nextEventDate' | 'salaryMax' | 'createdAt' | 'updatedAt' | 'status';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;

@@ -22,9 +22,9 @@ export const DeleteConfirmationDialog = ({
 }: DeleteConfirmationDialogProps) => {
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogTitle sx={{ color: 'black' }}>Confirm Deletion</DialogTitle>
       <DialogContent>
-        <DialogContentText>
+        <DialogContentText sx={{ color: 'black' }}>
           Are you sure you want to delete {itemName}? This action cannot be undone.
         </DialogContentText>
       </DialogContent>

@@ -1,3 +1,4 @@
+// frontend/src/components/ApplicationForm.tsx
 import { useState, useEffect, memo } from 'react';
 import type { FormEvent } from 'react';
 import {
@@ -68,8 +69,8 @@ const ApplicationForm = memo(({
           email: initialData.contact?.email || '',
           phone: initialData.contact?.phone || '',
         },
-        salaryMin: initialData.salaryMin, // keep as is (0 is valid)
-        salaryMax: initialData.salaryMax, // keep as is (0 is valid)
+        salaryMin: initialData.salaryMin,
+        salaryMax: initialData.salaryMax,
         source: initialData.source || '',
         status: initialData.status || 'Sent',
         appliedDate: applied,
@@ -126,12 +127,11 @@ const ApplicationForm = memo(({
         },
         url: formData.url || undefined,
         source: formData.source || undefined,
-        // Salary fields - keep as is (may be null, number, or undefined)
         salaryMin: formData.salaryMin,
         salaryMax: formData.salaryMax,
-        notes: formData.notes?.length ? formData.notes : undefined,
+        // Always pass notes array (empty array allowed to clear notes)
+        notes: formData.notes,
       };
-      // Cast to any to avoid type issues with null values (parent expects Partial<Application>)
       onSubmit(dataToSend as any);
     }
   };

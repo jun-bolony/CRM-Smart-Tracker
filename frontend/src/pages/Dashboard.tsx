@@ -34,6 +34,7 @@ import {
 } from 'recharts';
 import html2canvas from 'html2canvas';
 import { saveFileWithPicker } from '../utils/fileUtils';
+import { scrollbarSx } from '../styles/scrollbar';
 
 const statusColors: Record<string, string> = {
   Sent: '#2196f3',
@@ -46,27 +47,6 @@ const statusColors: Record<string, string> = {
 };
 
 const CHART_COLORS = ['#2196f3', '#6FD1E2', '#A37BE0', '#ffc107', '#4caf50', '#f44336', '#9e9e9e'];
-
-const pageScrollbarSx = {
-  width: '100%',
-  height: '100%',
-  overflowY: 'auto',
-  '&::-webkit-scrollbar': {
-    width: '10px',
-  },
-  '&::-webkit-scrollbar-track': {
-    backgroundColor: '#f1f1f1',
-  },
-  '&::-webkit-scrollbar-thumb': {
-    backgroundColor: '#c1c1c1',
-    borderRadius: '8px',
-    border: '2px solid #f1f1f1',
-    backgroundClip: 'padding-box',
-  },
-  '&::-webkit-scrollbar-thumb:hover': {
-    backgroundColor: '#a8a8a8',
-  },
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -113,7 +93,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Box sx={pageScrollbarSx}>
+      <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <Container maxWidth="lg" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
           <CircularProgress />
         </Container>
@@ -123,7 +103,7 @@ const Dashboard = () => {
 
   if (!stats) {
     return (
-      <Box sx={pageScrollbarSx}>
+      <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <Container maxWidth="lg" sx={{ py: 4 }}>
           <Typography>No data available</Typography>
         </Container>
@@ -132,37 +112,9 @@ const Dashboard = () => {
   }
 
   const { statusDistribution, timeline, topSources, funnel, totalApplications, offerCount, offerRate } = stats;
-  const pieData = statusDistribution.length > 0 ? statusDistribution : [{ name: 'No data', value: 1 }];
-
-  const renderFunnelLabel = (props: any) => {
-    const { x, y, width, height, index } = props;
-    const stageData = funnel[index];
-    
-    if (!stageData) return null;
-    
-    const stageName = stageData.stage;
-    const stageCount = stageData.count;
-    
-    const labelColor = stageName && statusColors[stageName]
-      ? statusColors[stageName]
-      : CHART_COLORS[index % CHART_COLORS.length];
-
-    return (
-      <text
-        x={x + width + 10}
-        y={y + height / 2}
-        fill={labelColor}
-        dominantBaseline="central"
-        fontSize={13}
-        fontWeight="bold"
-      >
-        {`— ${stageCount}`}
-      </text>
-    );
-  };
 
   return (
-    <Box sx={pageScrollbarSx}>
+    <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
       <Container maxWidth="lg" sx={{ py: 1.5, px: { xs: 2, md: 3 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
           <Button 
@@ -216,26 +168,32 @@ const Dashboard = () => {
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1.5, mb: 1.5 }}>
             <Box sx={{ flex: 1, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
               <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Status Distribution</Typography>
-              <Box sx={{ height: 200 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="53%"
-                      outerRadius={70}
-                      label
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Box>
+              {statusDistribution.length > 0 ? (
+                <Box sx={{ height: 200 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusDistribution}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="53%"
+                        outerRadius={70}
+                        label
+                      >
+                        {statusDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              ) : (
+                <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">No data available</Typography>
+                </Box>
+              )}
             </Box>
 
             <Box sx={{ flex: 1.4, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
@@ -292,7 +250,30 @@ const Dashboard = () => {
                       nameKey="stage"
                       isAnimationActive
                     >
-                      <LabelList content={renderFunnelLabel} />
+                      <LabelList
+                        content={(props) => {
+                          const { x, y, width, height, index } = props;
+                          const stageData = funnel[index];
+                          if (!stageData) return null;
+                          const stageName = stageData.stage;
+                          const stageCount = stageData.count;
+                          const labelColor = stageName && statusColors[stageName]
+                            ? statusColors[stageName]
+                            : CHART_COLORS[index % CHART_COLORS.length];
+                          return (
+                            <text
+                              x={x + width + 10}
+                              y={y + height / 2}
+                              fill={labelColor}
+                              dominantBaseline="central"
+                              fontSize={13}
+                              fontWeight="bold"
+                            >
+                              {`— ${stageCount}`}
+                            </text>
+                          );
+                        }}
+                      />
                       {funnel.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={statusColors[entry.stage] || CHART_COLORS[index % CHART_COLORS.length]} />
                       ))}

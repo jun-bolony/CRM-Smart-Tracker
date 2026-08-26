@@ -38,6 +38,7 @@ import type { Application, ApplicationStatus, ApplicationQueryParams } from '../
 import Papa from 'papaparse';
 import { saveFileWithPicker } from '../utils/fileUtils';
 import { DragDropImport } from '../components/DragDropImport';
+import { scrollbarSx } from '../styles/scrollbar';  // <-- added import
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -76,7 +77,7 @@ const ApplicationListPage = memo(() => {
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'appliedDate' | 'nextEventDate' | 'salaryMax'>('appliedDate');
+  const [sortBy, setSortBy] = useState<'appliedDate' | 'nextEventDate' | 'salaryMax' | 'createdAt' | 'updatedAt' | 'status'>('appliedDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sourceOptions, setSourceOptions] = useState<string[]>([]);
 
@@ -484,7 +485,8 @@ const ApplicationListPage = memo(() => {
           width: '100%',
           boxSizing: 'border-box',
           backgroundColor: 'transparent',
-          overflowY: 'auto', // Added: allow page scrolling
+          overflowY: 'auto',
+          ...scrollbarSx,   // <-- added unified scrollbar style
         }}
       >
         <Box
@@ -492,9 +494,9 @@ const ApplicationListPage = memo(() => {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '100%', // Changed from height: '100%'
+            minHeight: '100%',
             backgroundColor: 'transparent',
-            overflow: 'visible', // Changed from overflow: 'hidden'
+            overflow: 'visible',
           }}
         >
           <Box
@@ -503,7 +505,7 @@ const ApplicationListPage = memo(() => {
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'visible', // Changed from overflow: 'hidden'
+              overflow: 'visible',
               backgroundColor: 'background.default',
               minHeight: 0,
             }}
@@ -519,8 +521,8 @@ const ApplicationListPage = memo(() => {
                   display: 'flex',
                   flexDirection: 'column',
                   flex: 1,
-                  minHeight: '100%', // Removed duplicate minHeight: 0
-                  overflow: 'visible', // Changed from overflow: 'hidden'
+                  minHeight: '100%',
+                  overflow: 'visible',
                 }}
               >
                 <Box 
@@ -556,7 +558,6 @@ const ApplicationListPage = memo(() => {
                       Dashboard
                     </Button>
                     
-                    {/* Only render the view toggle on screens >= sm */}
                     {!isMobile && (
                       <Box
                         sx={{
@@ -720,6 +721,9 @@ const ApplicationListPage = memo(() => {
                             sx={filterInputSx}
                           >
                             <MenuItem value="appliedDate">Applied Date</MenuItem>
+                            <MenuItem value="createdAt">Date Added</MenuItem>
+                            <MenuItem value="updatedAt">Last Updated</MenuItem>
+                            <MenuItem value="status">Status</MenuItem>
                             <MenuItem value="nextEventDate">Next Event</MenuItem>
                             <MenuItem value="salaryMax">Salary Max</MenuItem>
                           </Select>
@@ -825,6 +829,7 @@ const ApplicationListPage = memo(() => {
                     minHeight: 0,
                     overflow: 'auto',
                     p: 0.5,
+                    ...scrollbarSx,   // <-- added unified scrollbar style
                   }}
                 >
                   {loading ? (

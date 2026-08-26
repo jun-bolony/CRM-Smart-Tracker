@@ -2,8 +2,6 @@
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import type { Application, ApplicationQueryParams, StatsData } from '../types/Application';
 
-// In development, use empty baseURL so requests go through Vite proxy.
-// In production, use the full backend URL from environment.
 const baseURL = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL || 'https://your-backend.onrender.com'
   : '';
@@ -91,7 +89,6 @@ export const bulkCreateApplications = (applications: Omit<Application, '_id' | '
   return apiClient.post('/api/applications/bulk', { applications });
 };
 
-// Health check function (uses fetch to avoid interceptors and token injection)
 export const checkHealth = (signal?: AbortSignal): Promise<void> => {
   const url = import.meta.env.PROD
     ? `${import.meta.env.VITE_API_URL}/api/health`
@@ -105,4 +102,8 @@ export const checkHealth = (signal?: AbortSignal): Promise<void> => {
     }
     return response.json();
   }).then(() => undefined);
+};
+
+export const deleteAccount = (): Promise<void> => {
+  return apiClient.delete('/api/auth/account');
 };

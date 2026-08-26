@@ -21,8 +21,9 @@ import {
   Snackbar,
   Alert,
   useMediaQuery,
+  IconButton,
 } from '@mui/material';
-import { ArrowBack, GetApp, CloudUpload, Edit, Delete } from '@mui/icons-material';
+import { ArrowBack, GetApp, CloudUpload, Edit, Delete, Close as CloseIcon } from '@mui/icons-material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types/Application';
 import { getApplication, updateApplication, deleteApplication } from '../services/api';
@@ -31,6 +32,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog';
 import { saveFileWithPicker } from '../utils/fileUtils';
 import { DragDropImport } from '../components/DragDropImport';
+import { scrollbarSx } from '../styles/scrollbar';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -60,46 +62,6 @@ const statusColorMap: Record<ApplicationStatus, 'default' | 'primary' | 'seconda
   Offer: 'success',
   Rejected: 'error',
   Archived: 'default',
-};
-
-// Reusable scrollbar styling
-const scrollbarStylesSx = {
-  '&::-webkit-scrollbar': {
-    width: '14px',
-  },
-  '&::-webkit-scrollbar-track': {
-    backgroundColor: '#f1f1f1',
-  },
-  '&::-webkit-scrollbar-thumb': {
-    backgroundColor: '#c1c1c1',
-    borderRadius: '8px',
-    border: '3px solid #f1f1f1',
-    backgroundClip: 'padding-box',
-  },
-  '&::-webkit-scrollbar-thumb:hover': {
-    backgroundColor: '#a8a8a8',
-  },
-  '&::-webkit-scrollbar-button:vertical:decrement': {
-    display: 'block',
-    height: '14px',
-    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 14l5-5 5 5z\'/></svg>")',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  },
-  '&::-webkit-scrollbar-button:vertical:increment': {
-    display: 'block',
-    height: '14px',
-    backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'%23999999\'><path d=\'M7 10l5 5 5-5z\'/></svg>")',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-  },
-};
-
-const pageScrollbarSx = {
-  width: '100%',
-  height: '100%',
-  overflowY: 'auto' as const,
-  ...scrollbarStylesSx,
 };
 
 // Component for displaying standard fields with full text wrap support
@@ -235,6 +197,18 @@ const ApplicationDetailPage = () => {
     }
   };
 
+  const handleDeleteNote = async (index: number) => {
+    if (!application) return;
+    const currentNotes = application.notes || [];
+    const updatedNotes = currentNotes.filter((_, i) => i !== index);
+    try {
+      const updated = await updateApplication(application._id!, { notes: updatedNotes });
+      setApplication(updated);
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete note');
+    }
+  };
+
   const handleBack = () => {
     navigate('/');
   };
@@ -335,7 +309,7 @@ const ApplicationDetailPage = () => {
 
   if (loading) {
     return (
-      <Box sx={pageScrollbarSx}>
+      <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <LoadingSpinner />
       </Box>
     );
@@ -343,7 +317,7 @@ const ApplicationDetailPage = () => {
 
   if (!application) {
     return (
-      <Box sx={pageScrollbarSx}>
+      <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <Container maxWidth="lg" sx={{ py: 4 }}>
           <Typography variant="h6">Application not found</Typography>
           <Button onClick={handleBack} startIcon={<ArrowBack />}>
@@ -363,7 +337,7 @@ const ApplicationDetailPage = () => {
     : '-';
 
   return (
-    <Box sx={pageScrollbarSx}>
+    <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Toolbar with conditionally hidden button text on mobile */}
         <Box sx={{ 
@@ -561,17 +535,36 @@ const ApplicationDetailPage = () => {
                   <List dense sx={{ 
                     maxHeight: '300px', 
                     overflowY: 'auto',
-                    ...scrollbarStylesSx
+                    ...scrollbarSx
                   }}>
-                    {application.notes.slice().reverse().map((note, index, arr) => (
-                      <ListItem key={index} divider={index < arr.length - 1} sx={{ px: 0 }}>
-                        <ListItemText 
-                          primary={note} 
-                          secondary={`Note ${arr.length - index}`} 
-                          sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem', wordBreak: 'break-word', whiteSpace: 'normal' } }}
-                        />
-                      </ListItem>
-                    ))}
+                    {application.notes.slice().reverse().map((note, index, arr) => {
+                      const originalIndex = arr.length - 1 - index; // index in original array
+                      return (
+                        <ListItem
+                          key={originalIndex}
+                          divider={index < arr.length - 1}
+                          sx={{ px: 0, display: 'flex', alignItems: 'flex-start' }}
+                          secondaryAction={
+                            <Tooltip title="Delete this note">
+                              <IconButton
+                                edge="end"
+                                size="small"
+                                onClick={() => handleDeleteNote(originalIndex)}
+                                sx={{ color: 'error.main' }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          }
+                        >
+                          <ListItemText
+                            primary={note}
+                            secondary={`Note ${arr.length - index}`}
+                            sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem', wordBreak: 'break-word', whiteSpace: 'normal' } }}
+                          />
+                        </ListItem>
+                      );
+                    })}
                   </List>
                 ) : (
                   <Typography variant="body2" color="text.secondary">No notes yet.</Typography>
@@ -587,7 +580,7 @@ const ApplicationDetailPage = () => {
                   <List dense sx={{ 
                     maxHeight: '350px', 
                     overflowY: 'auto',
-                    ...scrollbarStylesSx
+                    ...scrollbarSx
                   }}>
                     {application.statusHistory
                       .slice()

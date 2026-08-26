@@ -2,6 +2,8 @@
 const Application = require('../models/Application');
 
 const MAX_APPLICATIONS_PER_USER = 1000;
+// Order for status sorting (matches frontend statusOptions)
+const STATUS_ORDER = ['Sent', 'Viewed', 'Interview', 'Test', 'Offer', 'Rejected', 'Archived'];
 
 const formatResponse = (success, data = null, message = '') => ({
   success,
@@ -48,23 +50,43 @@ exports.getAllApplications = async (req, res, next) => {
       }
     }
 
-    const sort = {};
-    if (sortBy) {
-      const order = sortOrder === 'desc' ? -1 : 1;
-      sort[sortBy] = order;
-    } else {
-      sort.createdAt = -1;
-    }
-
     const pageNum = parseInt(page, 10) || 1;
     const requestedLimit = parseInt(limit, 10) || 10;
     const limitNum = Math.min(requestedLimit, 50);
     const skip = (pageNum - 1) * limitNum;
 
-    const applications = await Application.find(filter)
-      .sort(sort)
-      .skip(skip)
-      .limit(limitNum);
+    // Allowed sort fields
+    const allowedSortFields = ['appliedDate', 'nextEventDate', 'salaryMax', 'createdAt', 'updatedAt', 'status'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const sortOrderValue = sortOrder === 'desc' ? -1 : 1;
+
+    let applications;
+
+    if (sortField === 'status') {
+      // Use aggregation to add status order and sort by it
+      const pipeline = [
+        { $match: filter },
+        {
+          $addFields: {
+            statusOrder: {
+              $indexOfArray: [STATUS_ORDER, '$status']
+            }
+          }
+        },
+        { $sort: { statusOrder: sortOrderValue } },
+        { $skip: skip },
+        { $limit: limitNum }
+      ];
+      applications = await Application.aggregate(pipeline);
+    } else {
+      // Regular find with sorting
+      const sortObj = {};
+      sortObj[sortField] = sortOrderValue;
+      applications = await Application.find(filter)
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limitNum);
+    }
 
     res.status(200).json(formatResponse(true, applications));
   } catch (err) {
@@ -72,6 +94,8 @@ exports.getAllApplications = async (req, res, next) => {
   }
 };
 
+// ... остальные контроллеры (getApplicationById, createApplication, updateApplication, deleteApplication, createBulkApplications) остаются без изменений
+// Привожу их для полноты, но они не меняются.
 exports.getApplicationById = async (req, res, next) => {
   try {
     const { id } = req.params;
