@@ -72,6 +72,13 @@ const NavLink: FC<NavLinkProps> = ({ label, onClick }) => (
   </Typography>
 );
 
+// Helper type for navigation button configuration
+interface NavButtonConfig {
+  active: boolean;
+  targetPath: string | null;
+  tooltip: string | null;
+}
+
 export const GlobalNavBar: FC = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -89,7 +96,7 @@ export const GlobalNavBar: FC = () => {
   const applicationId = editMatch?.[1] || detailMatch?.[1] || null;
 
   // Helper to build button config
-  const getButtonConfig = (type: 'edit' | 'detail') => {
+  const getButtonConfig = (type: 'edit' | 'detail'): NavButtonConfig => {
     const isEditPage = !!editMatch;
     const isDetailPage = !!detailMatch;
 
@@ -120,6 +127,9 @@ export const GlobalNavBar: FC = () => {
         tooltip: 'Active when viewing an application\'s edit or detail page.',
       };
     }
+
+    // Fallback (should never be reached because `type` is constrained)
+    return { active: false, targetPath: null, tooltip: null };
   };
 
   const editConfig = getButtonConfig('edit');
@@ -161,7 +171,7 @@ export const GlobalNavBar: FC = () => {
   // Render a nav button:
   // - If active or has targetPath -> use NavTab (with appropriate active flag)
   // - Otherwise (no targetPath, not active) -> use NavLink with Tooltip
-  const renderNavButton = (label: string, config: { active: boolean; targetPath: string | null; tooltip: string | null }) => {
+  const renderNavButton = (label: string, config: NavButtonConfig) => {
     const { active, targetPath, tooltip } = config;
 
     if (active || targetPath) {
@@ -363,7 +373,7 @@ export const GlobalNavBar: FC = () => {
                   fontSize: '0.55rem',
                 }}
               >
-                0.9.90
+                0.9.70
               </Typography>
             </Box>
 
@@ -431,7 +441,7 @@ export const GlobalNavBar: FC = () => {
 
       {/* Delete Account Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle sx={{ color: 'black' }}>Delete Account?</DialogTitle>
+        <DialogTitle sx={{ color: 'black' }}>Delete Account</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ color: 'black' }}>
             This action is <strong>irreversible</strong>. All your applications, notes, and personal data will be permanently removed from the server.

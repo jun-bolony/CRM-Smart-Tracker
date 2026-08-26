@@ -253,17 +253,23 @@ const Dashboard = () => {
                       <LabelList
                         content={(props) => {
                           const { x, y, width, height, index } = props;
-                          const stageData = funnel[index];
+                          // Safely convert values and provide defaults
+                          const safeX = Number(x) || 0;
+                          const safeY = Number(y) || 0;
+                          const safeWidth = Number(width) || 0;
+                          const safeHeight = Number(height) || 0;
+                          const safeIndex = index ?? 0;
+                          const stageData = funnel[safeIndex];
                           if (!stageData) return null;
                           const stageName = stageData.stage;
                           const stageCount = stageData.count;
                           const labelColor = stageName && statusColors[stageName]
                             ? statusColors[stageName]
-                            : CHART_COLORS[index % CHART_COLORS.length];
+                            : CHART_COLORS[safeIndex % CHART_COLORS.length];
                           return (
                             <text
-                              x={x + width + 10}
-                              y={y + height / 2}
+                              x={safeX + safeWidth + 10}
+                              y={safeY + safeHeight / 2}
                               fill={labelColor}
                               dominantBaseline="central"
                               fontSize={13}
