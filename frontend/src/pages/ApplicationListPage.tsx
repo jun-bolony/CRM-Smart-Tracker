@@ -17,6 +17,7 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import { 
   Add as AddIcon, 
@@ -65,6 +66,8 @@ const filterInputSx = {
 
 const ApplicationListPage = memo(() => {
   const navigate = useNavigate();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +83,9 @@ const ApplicationListPage = memo(() => {
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     return (localStorage.getItem('crm_view_preference') as 'card' | 'list') || 'card';
   });
+
+  // Derived view mode: force cards on mobile screens
+  const displayViewMode = isMobile ? 'card' : viewMode;
 
   useEffect(() => {
     localStorage.setItem('crm_view_preference', viewMode);
@@ -550,63 +556,66 @@ const ApplicationListPage = memo(() => {
                       Dashboard
                     </Button>
                     
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.6,
-                        backgroundColor: '#fff',
-                        p: 0.5,
-                        px: 0.7,
-                        borderRadius: 6,
-                        border: '1px solid #e0e0e0',
-                        boxShadow: '0px 1px 3px rgba(0,0,0,0.1)'
-                      }}
-                    >
-                      <GridViewIcon 
-                        onClick={() => setViewMode('card')}
-                        sx={{ 
-                          cursor: 'pointer', 
-                          color: viewMode === 'card' ? '#666' : '#ccc',
-                          transition: 'color 0.2s',
-                          fontSize: '1.2rem'
-                        }} 
-                      />
+                    {/* Only render the view toggle on screens >= sm */}
+                    {!isMobile && (
                       <Box
-                        onClick={() => setViewMode(prev => prev === 'card' ? 'list' : 'card')}
                         sx={{
-                          width: 40,
-                          height: 22,
-                          borderRadius: 11,
-                          backgroundColor: '#e0e0e0',
-                          position: 'relative',
-                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.6,
+                          backgroundColor: '#fff',
+                          p: 0.5,
+                          px: 0.7,
+                          borderRadius: 6,
+                          border: '1px solid #e0e0e0',
+                          boxShadow: '0px 1px 3px rgba(0,0,0,0.1)'
                         }}
                       >
+                        <GridViewIcon 
+                          onClick={() => setViewMode('card')}
+                          sx={{ 
+                            cursor: 'pointer', 
+                            color: viewMode === 'card' ? '#666' : '#ccc',
+                            transition: 'color 0.2s',
+                            fontSize: '1.2rem'
+                          }} 
+                        />
                         <Box
+                          onClick={() => setViewMode(prev => prev === 'card' ? 'list' : 'card')}
                           sx={{
-                            position: 'absolute',
-                            top: 2,
-                            left: viewMode === 'card' ? 2 : 21,
-                            width: 18,
-                            height: 18,
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #a1e2a1 0%, #4facfe 100%)',
-                            transition: 'left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                            boxShadow: '0px 1px 2px rgba(0,0,0,0.2)'
+                            width: 40,
+                            height: 22,
+                            borderRadius: 11,
+                            backgroundColor: '#e0e0e0',
+                            position: 'relative',
+                            cursor: 'pointer',
                           }}
+                        >
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              top: 2,
+                              left: viewMode === 'card' ? 2 : 21,
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #a1e2a1 0%, #4facfe 100%)',
+                              transition: 'left 0.3s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                              boxShadow: '0px 1px 2px rgba(0,0,0,0.2)'
+                            }}
+                          />
+                        </Box>
+                        <ListViewIcon 
+                          onClick={() => setViewMode('list')}
+                          sx={{ 
+                            cursor: 'pointer', 
+                            color: viewMode === 'list' ? '#666' : '#ccc',
+                            transition: 'color 0.2s',
+                            fontSize: '1.2rem'
+                          }} 
                         />
                       </Box>
-                      <ListViewIcon 
-                        onClick={() => setViewMode('list')}
-                        sx={{ 
-                          cursor: 'pointer', 
-                          color: viewMode === 'list' ? '#666' : '#ccc',
-                          transition: 'color 0.2s',
-                          fontSize: '1.2rem'
-                        }} 
-                      />
-                    </Box>
+                    )}
                   </Box>
 
                   <Paper
@@ -820,7 +829,7 @@ const ApplicationListPage = memo(() => {
                 >
                   {loading ? (
                     <LoadingSpinner />
-                  ) : viewMode === 'list' ? (
+                  ) : displayViewMode === 'list' ? (
                     <ApplicationTable
                       applications={applications}
                       onEdit={(id: string) => navigate(`/edit/${id}`)}
