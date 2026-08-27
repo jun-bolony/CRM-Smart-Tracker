@@ -2,6 +2,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { Box, Paper, Typography } from '@mui/material';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DragDropImportProps {
   onDrop: (files: FileList) => void;
@@ -20,6 +21,7 @@ export const DragDropImport: React.FC<DragDropImportProps> = ({
   disabled = false,
   onError,
 }) => {
+  const { t } = useLanguage();
   const [isDragging, setIsDragging] = useState(false);
   const dragCounter = useRef(0);
 
@@ -160,10 +162,12 @@ export const DragDropImport: React.FC<DragDropImportProps> = ({
             }}
           >
             <Typography variant="h5" gutterBottom>
-              Drop files here
+              {t('dropFilesHere')}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {accept !== '*' ? `Accepted: ${accept}` : 'All files accepted'}
+              {accept !== '*'
+                ? t('acceptedFiles', { accept })
+                : t('allFilesAccepted')}
             </Typography>
           </Paper>
         </Box>

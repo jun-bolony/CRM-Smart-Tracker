@@ -19,10 +19,10 @@ import {
   Tooltip,
   useMediaQuery,
 } from '@mui/material';
-import { 
-  Add as AddIcon, 
-  Dashboard as DashboardIcon, 
-  GetApp as ExportIcon, 
+import {
+  Add as AddIcon,
+  Dashboard as DashboardIcon,
+  GetApp as ExportIcon,
   CloudUpload as ImportIcon,
   Window as GridViewIcon,
   ViewHeadline as ListViewIcon
@@ -38,7 +38,8 @@ import type { Application, ApplicationStatus, ApplicationQueryParams } from '../
 import Papa from 'papaparse';
 import { saveFileWithPicker } from '../utils/fileUtils';
 import { DragDropImport } from '../components/DragDropImport';
-import { scrollbarSx } from '../styles/scrollbar';  // <-- added import
+import { scrollbarSx } from '../styles/scrollbar';
+import { useLanguage } from '../context/LanguageContext';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -68,6 +69,7 @@ const filterInputSx = {
 const ApplicationListPage = memo(() => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+  const { t } = useLanguage();
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -85,7 +87,6 @@ const ApplicationListPage = memo(() => {
     return (localStorage.getItem('crm_view_preference') as 'card' | 'list') || 'card';
   });
 
-  // Derived view mode: force cards on mobile screens
   const displayViewMode = isMobile ? 'card' : viewMode;
 
   useEffect(() => {
@@ -131,11 +132,11 @@ const ApplicationListPage = memo(() => {
       const data = await getApplications(queryParams);
       setApplications(data);
     } catch (err: any) {
-      setError(err.message || 'Failed to load applications');
+      setError(t('failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [queryParams]);
+  }, [queryParams, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -177,13 +178,13 @@ const ApplicationListPage = memo(() => {
       setDeleteId(null);
       fetchApplications();
       loadSources();
-      setSuccessMessage('Application deleted successfully');
+      setSuccessMessage(t('applicationDeleted'));
     } catch (err: any) {
-      setError(err.message || 'Failed to delete application');
+      setError(t('failedToDelete'));
       setDeleteDialogOpen(false);
       setDeleteId(null);
     }
-  }, [deleteId, fetchApplications, loadSources]);
+  }, [deleteId, fetchApplications, loadSources, t]);
 
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
@@ -247,13 +248,13 @@ const ApplicationListPage = memo(() => {
       }
       const result = await saveFileWithPicker(blob, suggestedName, mimeType);
       if (result.success) {
-        setSuccessMessage(`File exported successfully as ${result.fileName || suggestedName}`);
+        setSuccessMessage(t('fileExported', { fileName: result.fileName || suggestedName }));
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to export data');
+      setError(t('failedToExport'));
     }
     handleExportClose();
-  }, [convertToCSV]);
+  }, [convertToCSV, t]);
 
   const processImportFiles = useCallback(async (files: FileList) => {
     if (!files || files.length === 0) return;
@@ -275,7 +276,7 @@ const ApplicationListPage = memo(() => {
           const result = Papa.parse(text, { header: true, skipEmptyLines: true });
           parsedData = result.data;
         } else {
-          globalErrors.push(`Unsupported file format: ${file.name}. Please upload JSON or CSV.`);
+          globalErrors.push(t('importUnsupported', { fileName: file.name }));
           continue;
         }
 
@@ -422,15 +423,19 @@ const ApplicationListPage = memo(() => {
     }
 
     if (globalErrors.length > 0) {
-      const summary = `Import completed with errors. Created: ${totalCreated}, Updated: ${totalUpdated}. Errors: ${globalErrors.join('; ')}`;
+      const summary = t('importErrors', {
+        created: totalCreated,
+        updated: totalUpdated,
+        errors: globalErrors.join('; ')
+      });
       setError(summary);
       setSuccessMessage(null);
     } else {
-      const summary = `Import successful: ${totalCreated} created, ${totalUpdated} updated.`;
+      const summary = t('importSuccessful', { created: totalCreated, updated: totalUpdated });
       setSuccessMessage(summary);
       setError(null);
     }
-  }, [fetchApplications, loadSources]);
+  }, [fetchApplications, loadSources, t]);
 
   const handleImportFileInputChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -449,12 +454,12 @@ const ApplicationListPage = memo(() => {
       const suggestedName = `application_${app.company}_${app.position}_${timestamp}.json`;
       const result = await saveFileWithPicker(blob, suggestedName, 'application/json');
       if (result.success) {
-        setSuccessMessage(`Application exported successfully as ${result.fileName || suggestedName}`);
+        setSuccessMessage(t('fileExported', { fileName: result.fileName || suggestedName }));
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to export application');
+      setError(t('failedToExport'));
     }
-  }, [applications]);
+  }, [applications, t]);
 
   const handleImportSingle = useCallback(async (id: string, file: File) => {
     try {
@@ -463,18 +468,18 @@ const ApplicationListPage = memo(() => {
       if (file.type === 'application/json' || file.name.endsWith('.json')) {
         data = JSON.parse(text);
       } else {
-        setError('Only JSON format is supported for single application import.');
+        setError(t('onlyJsonSupported'));
         return;
       }
       delete data.statusHistory;
       await updateApplication(id, data);
       fetchApplications();
       loadSources();
-      setSuccessMessage('Application imported successfully');
+      setSuccessMessage(t('importSuccessful', { created: 0, updated: 1 }));
     } catch (err: any) {
-      setError(err.message || 'Failed to import application');
+      setError(t('failedToImport'));
     }
-  }, [fetchApplications, loadSources]);
+  }, [fetchApplications, loadSources, t]);
 
   return (
     <>
@@ -486,7 +491,7 @@ const ApplicationListPage = memo(() => {
           boxSizing: 'border-box',
           backgroundColor: 'transparent',
           overflowY: 'auto',
-          ...scrollbarSx,   // <-- added unified scrollbar style
+          ...scrollbarSx,
         }}
       >
         <Box
@@ -525,15 +530,15 @@ const ApplicationListPage = memo(() => {
                   overflow: 'visible',
                 }}
               >
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', lg: 'row' }, 
-                    justifyContent: 'space-between', 
-                    alignItems: { xs: 'stretch', lg: 'flex-start' }, 
-                    gap: 4, 
-                    mb: 1, 
-                    flexShrink: 0 
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', lg: 'row' },
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'stretch', lg: 'flex-start' },
+                    gap: 4,
+                    mb: 1,
+                    flexShrink: 0
                   }}
                 >
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, mt: { lg: 5 } }}>
@@ -541,10 +546,10 @@ const ApplicationListPage = memo(() => {
                       variant="outlined"
                       startIcon={<DashboardIcon />}
                       onClick={() => navigate('/dashboard')}
-                      sx={{ 
-                        borderRadius: '20px', 
-                        fontWeight: 'bold', 
-                        px: 3, 
+                      sx={{
+                        borderRadius: '20px',
+                        fontWeight: 'bold',
+                        px: 3,
                         py: 1,
                         color: '#1976d2',
                         border: '2px solid #1976d2',
@@ -555,9 +560,9 @@ const ApplicationListPage = memo(() => {
                         }
                       }}
                     >
-                      Dashboard
+                      {t('dashboard')}
                     </Button>
-                    
+
                     {!isMobile && (
                       <Box
                         sx={{
@@ -572,14 +577,14 @@ const ApplicationListPage = memo(() => {
                           boxShadow: '0px 1px 3px rgba(0,0,0,0.1)'
                         }}
                       >
-                        <GridViewIcon 
+                        <GridViewIcon
                           onClick={() => setViewMode('card')}
-                          sx={{ 
-                            cursor: 'pointer', 
+                          sx={{
+                            cursor: 'pointer',
                             color: viewMode === 'card' ? '#666' : '#ccc',
                             transition: 'color 0.2s',
                             fontSize: '1.2rem'
-                          }} 
+                          }}
                         />
                         <Box
                           onClick={() => setViewMode(prev => prev === 'card' ? 'list' : 'card')}
@@ -606,14 +611,14 @@ const ApplicationListPage = memo(() => {
                             }}
                           />
                         </Box>
-                        <ListViewIcon 
+                        <ListViewIcon
                           onClick={() => setViewMode('list')}
-                          sx={{ 
-                            cursor: 'pointer', 
+                          sx={{
+                            cursor: 'pointer',
                             color: viewMode === 'list' ? '#666' : '#ccc',
                             transition: 'color 0.2s',
                             fontSize: '1.2rem'
-                          }} 
+                          }}
                         />
                       </Box>
                     )}
@@ -633,23 +638,23 @@ const ApplicationListPage = memo(() => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         <TextField
-                          label="Search"
+                          label={t('search')}
                           value={search}
                           onChange={handleSearchChange}
                           size="small"
                           slotProps={{ inputLabel: { shrink: true } }}
-                          sx={{ 
+                          sx={{
                             flex: { xs: '1 1 100%', sm: 1 },
                             '& .MuiOutlinedInput-root': filterInputSx
                           }}
                         />
                         <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
-                          <InputLabel shrink>Source</InputLabel>
+                          <InputLabel shrink>{t('source')}</InputLabel>
                           <Select
                             multiple
                             value={sourceFilter}
                             onChange={handleSourceChange}
-                            input={<OutlinedInput label="Source" notched />}
+                            input={<OutlinedInput label={t('source')} notched />}
                             renderValue={(selected) => (
                               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                 {selected.map((value) => (
@@ -661,7 +666,7 @@ const ApplicationListPage = memo(() => {
                           >
                             {sourceOptions.length === 0 ? (
                               <MenuItem disabled>
-                                No sources available.
+                                {t('noSourcesAvailable')}
                               </MenuItem>
                             ) : (
                               sourceOptions.map((src) => (
@@ -673,32 +678,32 @@ const ApplicationListPage = memo(() => {
                           </Select>
                         </FormControl>
                         <FormControl size="small" sx={{ minWidth: 100, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-                          <InputLabel shrink>Order</InputLabel>
+                          <InputLabel shrink>{t('order')}</InputLabel>
                           <Select
                             value={sortOrder}
                             onChange={handleSortOrderChange}
-                            label="Order"
+                            label={t('order')}
                             notched
                             sx={filterInputSx}
                           >
-                            <MenuItem value="asc">Asc</MenuItem>
-                            <MenuItem value="desc">Desc</MenuItem>
+                            <MenuItem value="asc">{t('asc')}</MenuItem>
+                            <MenuItem value="desc">{t('desc')}</MenuItem>
                           </Select>
                         </FormControl>
                       </Box>
 
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                         <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
-                          <InputLabel shrink>Status</InputLabel>
+                          <InputLabel shrink>{t('status')}</InputLabel>
                           <Select
                             multiple
                             value={statusFilter}
                             onChange={handleStatusChange}
-                            input={<OutlinedInput label="Status" notched />}
+                            input={<OutlinedInput label={t('status')} notched />}
                             renderValue={(selected) => (
                               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                                 {selected.map((value) => (
-                                  <Chip key={value} label={value} size="small" />
+                                  <Chip key={value} label={t('statuses.' + value)} size="small" />
                                 ))}
                               </Box>
                             )}
@@ -706,36 +711,36 @@ const ApplicationListPage = memo(() => {
                           >
                             {statusOptions.map((status) => (
                               <MenuItem key={status} value={status}>
-                                {status}
+                                {t('statuses.' + status)}
                               </MenuItem>
                             ))}
                           </Select>
                         </FormControl>
                         <FormControl size="small" sx={{ flex: { xs: '1 1 100%', sm: 1 } }}>
-                          <InputLabel shrink>Sort By</InputLabel>
+                          <InputLabel shrink>{t('sortBy')}</InputLabel>
                           <Select
                             value={sortBy}
                             onChange={handleSortByChange}
-                            label="Sort By"
+                            label={t('sortBy')}
                             notched
                             sx={filterInputSx}
                           >
-                            <MenuItem value="appliedDate">Applied Date</MenuItem>
-                            <MenuItem value="createdAt">Date Added</MenuItem>
-                            <MenuItem value="updatedAt">Last Updated</MenuItem>
-                            <MenuItem value="status">Status</MenuItem>
-                            <MenuItem value="nextEventDate">Next Event</MenuItem>
-                            <MenuItem value="salaryMax">Salary Max</MenuItem>
+                            <MenuItem value="appliedDate">{t('appliedDate')}</MenuItem>
+                            <MenuItem value="createdAt">{t('dateAdded')}</MenuItem>
+                            <MenuItem value="updatedAt">{t('lastUpdated')}</MenuItem>
+                            <MenuItem value="status">{t('statusOrder')}</MenuItem>
+                            <MenuItem value="nextEventDate">{t('nextEvent')}</MenuItem>
+                            <MenuItem value="salaryMax">{t('salaryMax')}</MenuItem>
                           </Select>
                         </FormControl>
-                        
+
                         <Box sx={{ display: 'flex', justifyContent: { xs: 'center', sm: 'flex-end' }, minWidth: 150, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
-                          <Button 
+                          <Button
                             variant="outlined"
-                            onClick={handleResetFilters} 
-                            sx={{ 
-                              borderRadius: '20px', 
-                              fontWeight: 'bold', 
+                            onClick={handleResetFilters}
+                            sx={{
+                              borderRadius: '20px',
+                              fontWeight: 'bold',
                               color: '#58A4E8',
                               border: '1px solid #4fc3f7',
                               background: 'linear-gradient(150deg, #e1f5fe 0%, #ffffff 60%)',
@@ -745,7 +750,7 @@ const ApplicationListPage = memo(() => {
                               }
                             }}
                           >
-                            Reset Filters
+                            {t('resetFilters')}
                           </Button>
                         </Box>
                       </Box>
@@ -757,11 +762,11 @@ const ApplicationListPage = memo(() => {
                       variant="outlined"
                       startIcon={<AddIcon />}
                       onClick={() => navigate('/new')}
-                      sx={{ 
-                        fontWeight: 'bold', 
-                        py: 1, 
-                        px: 3, 
-                        whiteSpace: 'nowrap', 
+                      sx={{
+                        fontWeight: 'bold',
+                        py: 1,
+                        px: 3,
+                        whiteSpace: 'nowrap',
                         borderRadius: '8px',
                         color: '#000000',
                         border: '2px solid #1976d2',
@@ -772,17 +777,17 @@ const ApplicationListPage = memo(() => {
                         }
                       }}
                     >
-                      Add Application
+                      {t('addApplication')}
                     </Button>
-                    
+
                     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between', width: '100%' }}>
-                      <Tooltip title="Import all applications from CSV/JSON.">
+                      <Tooltip title={t('importTooltip')}>
                         <Button
                           variant="outlined"
                           startIcon={<ImportIcon />}
                           onClick={() => fileInputRef.current?.click()}
-                          sx={{ 
-                            borderRadius: '20px', 
+                          sx={{
+                            borderRadius: '20px',
                             flex: 1,
                             color: '#1976d2',
                             border: '1px solid #1976d2',
@@ -793,16 +798,16 @@ const ApplicationListPage = memo(() => {
                             }
                           }}
                         >
-                          Import
+                          {t('import')}
                         </Button>
                       </Tooltip>
-                      <Tooltip title="Export all applications as CSV or JSON.">
+                      <Tooltip title={t('exportTooltip')}>
                         <Button
                           variant="outlined"
                           startIcon={<ExportIcon />}
                           onClick={handleExportClick}
-                          sx={{ 
-                            borderRadius: '20px', 
+                          sx={{
+                            borderRadius: '20px',
                             flex: 1,
                             color: '#1976d2',
                             border: '1px solid #1976d2',
@@ -813,15 +818,16 @@ const ApplicationListPage = memo(() => {
                             }
                           }}
                         >
-                          Export
+                          {t('export')}
                         </Button>
                       </Tooltip>
                     </Box>
                   </Box>
                 </Box>
 
-                <Box sx={{ height: 1.85, backgroundColor: '#e0e0e0', width: '100%', mb: 1, flexShrink: 0 }} />
-                
+                {/* Divider */}
+                <Box sx={{ height: 1.8, backgroundColor: '#e0e0e0', width: '100%', mb: 1, flexShrink: 0 }} />
+
                 <Box
                   className="table-scroll-container"
                   sx={{
@@ -829,7 +835,7 @@ const ApplicationListPage = memo(() => {
                     minHeight: 0,
                     overflow: 'auto',
                     p: 0.5,
-                    ...scrollbarSx,   // <-- added unified scrollbar style
+                    ...scrollbarSx,
                   }}
                 >
                   {loading ? (
@@ -890,8 +896,8 @@ const ApplicationListPage = memo(() => {
                   open={Boolean(exportAnchorEl)}
                   onClose={handleExportClose}
                 >
-                  <MenuItem onClick={() => handleExport('csv')}>Export CSV</MenuItem>
-                  <MenuItem onClick={() => handleExport('json')}>Export JSON</MenuItem>
+                  <MenuItem onClick={() => handleExport('csv')}>{t('exportCSV')}</MenuItem>
+                  <MenuItem onClick={() => handleExport('json')}>{t('exportJSON')}</MenuItem>
                 </Menu>
 
               </Box>

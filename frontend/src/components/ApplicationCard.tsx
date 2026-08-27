@@ -1,7 +1,9 @@
+// frontend/src/components/ApplicationCard.tsx
 import { memo, useRef } from 'react';
 import { Box, Typography, IconButton, Chip, Tooltip } from '@mui/material';
 import { Edit, Delete, GetApp, CloudUpload } from '@mui/icons-material';
 import type { Application, ApplicationStatus } from '../types/Application';
+import { useLanguage } from '../context/LanguageContext';
 
 // Gradient maps matching the visual requirements for statuses
 const statusGradientMap: Record<ApplicationStatus, string> = {
@@ -57,6 +59,7 @@ const ApplicationCard = memo(({
   onExportSingle,
   onImportSingle,
 }: ApplicationCardProps) => {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const formatDate = (date?: Date | string) => {
@@ -79,7 +82,7 @@ const ApplicationCard = memo(({
 
   const latestNote = application.notes && application.notes.length > 0 
     ? application.notes[application.notes.length - 1] 
-    : 'No notes yet.';
+    : t('noNotesYet');
   
   const hasNotes = application.notes && application.notes.length > 0;
 
@@ -123,13 +126,13 @@ const ApplicationCard = memo(({
         }}
       >
         <Chip
-          label={application.status}
+          label={t('statuses.' + application.status)}
           color={statusColorMap[application.status]}
           size="small"
           sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#555' }}>Next Event</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', color: '#555' }}>{t('nextEventLabel')}</Typography>
           <Box sx={{ backgroundColor: '#fff', px: 1, py: 0.2, borderRadius: 2, border: '0px solid #e0e0e0' }}>
             <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
               {formatDate(application.nextEventDate)}
@@ -144,14 +147,14 @@ const ApplicationCard = memo(({
         {/* Company & Position */}
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'stretch' }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold', mb: 0.5, textAlign: 'center' }}>Company</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', mb: 0.5, textAlign: 'center' }}>{t('company')}</Typography>
             <Box sx={{ width: '100%', backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 1, textAlign: 'center', border: '1px solid #f0f0f0' }}>
               <TruncatedText text={application.company} sx={{ fontSize: '0.85rem' }} />
             </Box>
           </Box>
           <Box sx={{ width: '1px', backgroundColor: '#f0f0f0', my: 0 }} />
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, alignItems: 'stretch' }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold', mb: 0.5, textAlign: 'center' }}>Position</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', mb: 0.5, textAlign: 'center' }}>{t('position')}</Typography>
             <Box sx={{ width: '100%', backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 1, textAlign: 'center', border: '1px solid #f0f0f0' }}>
               <TruncatedText text={application.position} sx={{ fontSize: '0.85rem' }} />
             </Box>
@@ -160,7 +163,7 @@ const ApplicationCard = memo(({
 
         {/* Salary */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: '50px', mr: '50px' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', width: '60px', textAlign: 'center' }}>Salary</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', width: '60px', textAlign: 'center' }}>{t('salary')}</Typography>
           <Box sx={{ flex: 1, backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 2, textAlign: 'center', border: '1px solid #f0f0f0' }}>
              <TruncatedText text={salaryDisplay} sx={{ fontSize: '0.85rem' }} />
           </Box>
@@ -168,7 +171,7 @@ const ApplicationCard = memo(({
 
         {/* Source */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, ml: '50px', mr: '50px' }}>
-          <Typography variant="caption" sx={{ fontWeight: 'bold', width: '60px', textAlign: 'center' }}>Source</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 'bold', width: '60px', textAlign: 'center' }}>{t('source')}</Typography>
           <Box sx={{ flex: 1, backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 2, textAlign: 'center', border: '1px solid #f0f0f0' }}>
              <TruncatedText text={application.source || '-'} sx={{ fontSize: '0.85rem' }} />
           </Box>
@@ -187,11 +190,11 @@ const ApplicationCard = memo(({
               background: hasNotes ? 'linear-gradient(180deg, #FFEEBF 0%, #FFFBEA 55%)' : '#f5f5f5',
             }}
           >
-            <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>Note</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 0.5 }}>{t('note')}</Typography>
             <TruncatedText text={latestNote} sx={{ fontSize: '0.8rem', color: hasNotes ? 'text.primary' : 'text.secondary' }} />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Actions</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{t('actions')}</Typography>
             <IconButton
               size="small"
               color="primary"
@@ -211,7 +214,7 @@ const ApplicationCard = memo(({
         {/* Footer: Date & Buttons */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Applied Date</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{t('appliedDateLabel')}</Typography>
             <Box sx={{ backgroundColor: '#f9f9f9', px: 1, py: 0.2, borderRadius: 2, border: '0px solid #e0e0e0' }}>
               <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
                 {formatDate(application.appliedDate)}
@@ -219,18 +222,18 @@ const ApplicationCard = memo(({
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-             <Tooltip title="Export this application">
+             <Tooltip title={t('exportThisApplication')}>
               <IconButton size="small" onClick={(e) => { e.stopPropagation(); if (application._id) onExportSingle(application._id); }}>
                 <GetApp sx={{ fontSize: '1.1rem', color: '#555' }} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Import from JSON">
+            <Tooltip title={t('importFromJSON')}>
               <IconButton size="small" onClick={handleImportClick}>
                 <CloudUpload sx={{ fontSize: '1.1rem', color: '#555' }} />
                 <input type="file" accept=".json" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportChange} />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Delete">
+            <Tooltip title={t('delete')}>
               <IconButton size="small" color="error" onClick={(e) => { e.stopPropagation(); if (application._id) onDelete(application._id); }}>
                 <Delete sx={{ fontSize: '1.1rem' }} />
               </IconButton>

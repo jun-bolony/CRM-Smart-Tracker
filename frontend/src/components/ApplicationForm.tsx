@@ -12,6 +12,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import type { Application, ApplicationStatus } from '../types/Application';
+import { useLanguage } from '../context/LanguageContext';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -36,6 +37,7 @@ const ApplicationForm = memo(({
   onCancel,
   isEdit = false,
 }: ApplicationFormProps) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<Omit<Application, '_id' | 'createdAt' | 'updatedAt' | 'statusHistory'>>({
     company: '',
     position: '',
@@ -106,9 +108,9 @@ const ApplicationForm = memo(({
 
   const validate = (): boolean => {
     const newErrors: { [key: string]: string } = {};
-    if (!formData.company.trim()) newErrors.company = 'Company is required';
-    if (!formData.position.trim()) newErrors.position = 'Position is required';
-    if (!formData.status) newErrors.status = 'Status is required';
+    if (!formData.company.trim()) newErrors.company = t('companyRequired');
+    if (!formData.position.trim()) newErrors.position = t('positionRequired');
+    if (!formData.status) newErrors.status = t('statusRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,7 +131,6 @@ const ApplicationForm = memo(({
         source: formData.source || undefined,
         salaryMin: formData.salaryMin,
         salaryMax: formData.salaryMax,
-        // Always pass notes array (empty array allowed to clear notes)
         notes: formData.notes,
       };
       onSubmit(dataToSend as any);
@@ -143,7 +144,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '3 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Company "
+            label={t('companyRequired')}
             value={formData.company}
             onChange={(e) => handleChange('company', e.target.value)}
             error={!!errors.company}
@@ -153,15 +154,15 @@ const ApplicationForm = memo(({
         </Box>
         <Box sx={{ flex: '1 1 calc(1% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <FormControl fullWidth error={!!errors.status}>
-            <InputLabel>Status *</InputLabel>
+            <InputLabel>{t('statusRequired')}</InputLabel>
             <Select
               value={formData.status}
-              label="Status *"
+              label={t('statusRequired')}
               onChange={(e) => handleChange('status', e.target.value)}
             >
               {statusOptions.map((s) => (
                 <MenuItem key={s} value={s}>
-                  {s}
+                  {t('statuses.' + s)}
                 </MenuItem>
               ))}
             </Select>
@@ -173,7 +174,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '3 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Position "
+            label={t('positionRequired')}
             value={formData.position}
             onChange={(e) => handleChange('position', e.target.value)}
             error={!!errors.position}
@@ -184,7 +185,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(1% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Next Event Date"
+            label={t('nextEventDate')}
             type="date"
             value={formData.nextEventDate}
             onChange={(e) => handleChange('nextEventDate', e.target.value)}
@@ -196,7 +197,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Job URL"
+            label={t('jobUrl')}
             value={formData.url}
             onChange={(e) => handleChange('url', e.target.value)}
           />
@@ -204,7 +205,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Source"
+            label={t('sourceLabel')}
             value={formData.source}
             onChange={(e) => handleChange('source', e.target.value)}
           />
@@ -217,7 +218,7 @@ const ApplicationForm = memo(({
             <Box sx={{ flex: '1 1 50%', minWidth: 0 }}>
               <TextField
                 fullWidth
-                label="Salary Min"
+                label={t('salaryMin')}
                 type="number"
                 value={formData.salaryMin ?? ''}
                 onChange={(e) => {
@@ -230,7 +231,7 @@ const ApplicationForm = memo(({
             <Box sx={{ flex: '1 1 50%', minWidth: 0 }}>
               <TextField
                 fullWidth
-                label="Salary Max"
+                label={t('salaryMax')}
                 type="number"
                 value={formData.salaryMax ?? ''}
                 onChange={(e) => {
@@ -245,7 +246,7 @@ const ApplicationForm = memo(({
           <Box>
             <TextField
               fullWidth
-              label="Contact Email"
+              label={t('contactEmail')}
               value={formData.contact?.email || ''}
               onChange={(e) => handleContactChange('email', e.target.value)}
             />
@@ -254,7 +255,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(50% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Notes (one per line)"
+            label={t('notesPlaceholder')}
             multiline
             rows={5}
             value={formData.notes?.join('\n') || ''}
@@ -272,7 +273,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(5% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Contact Phone"
+            label={t('contactPhone')}
             value={formData.contact?.phone || ''}
             onChange={(e) => handleContactChange('phone', e.target.value)}
           />
@@ -280,7 +281,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(60% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Contact Name"
+            label={t('contactName')}
             value={formData.contact?.name || ''}
             onChange={(e) => handleContactChange('name', e.target.value)}
           />
@@ -290,7 +291,7 @@ const ApplicationForm = memo(({
         <Box sx={{ flex: '1 1 calc(1% - 8px)', minWidth: { xs: '100%', sm: '200px' } }}>
           <TextField
             fullWidth
-            label="Applied Date"
+            label={t('appliedDateLabel')}
             type="date"
             value={formData.appliedDate}
             onChange={(e) => handleChange('appliedDate', e.target.value)}
@@ -301,9 +302,9 @@ const ApplicationForm = memo(({
 
         {/* Buttons */}
         <Box sx={{ flex: '1 1 100%', display: 'flex', gap: 2, justifyContent: 'flex-end', mt: -1 }}>
-          <Button onClick={onCancel}>Cancel</Button>
+          <Button onClick={onCancel}>{t('cancel')}</Button>
           <Button type="submit" variant="contained" color="primary">
-            {isEdit ? 'Update' : 'Create'}
+            {isEdit ? t('update') : t('create')}
           </Button>
         </Box>
       </Box>

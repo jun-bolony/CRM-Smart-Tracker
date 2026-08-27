@@ -1,7 +1,9 @@
+// frontend/src/components/ApplicationCardList.tsx
 import { memo } from 'react';
 import { Box, Typography } from '@mui/material';
 import type { Application } from '../types/Application';
 import { ApplicationCard } from './ApplicationCard';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ApplicationCardListProps {
   applications: Application[];
@@ -20,12 +22,13 @@ const ApplicationCardList = memo(({
   onExportSingle,
   onImportSingle,
 }: ApplicationCardListProps) => {
+  const { t } = useLanguage();
   
   if (applications.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', p: 4 }}>
         <Typography variant="body1" color="text.secondary">
-          No applications found.
+          {t('noApplicationsFound')}
         </Typography>
       </Box>
     );

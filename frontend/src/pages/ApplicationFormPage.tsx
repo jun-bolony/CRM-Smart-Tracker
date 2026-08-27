@@ -9,11 +9,13 @@ import { ApplicationForm } from '../components/ApplicationForm';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorSnackbar } from '../components/ErrorSnackbar';
 import { scrollbarSx } from '../styles/scrollbar';
+import { useLanguage } from '../context/LanguageContext';
 
 const ApplicationFormPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = !!id;
+  const { t } = useLanguage();
 
   const [initialData, setInitialData] = useState<Partial<Application> | null>(null);
   const [loading, setLoading] = useState<boolean>(isEdit);
@@ -27,7 +29,7 @@ const ApplicationFormPage = () => {
           if (data.source === undefined) data.source = '';
           setInitialData(data);
         } catch (err: any) {
-          setError(err.message || 'Failed to load application');
+          setError(err.message || t('failedToLoad'));
         } finally {
           setLoading(false);
         }
@@ -37,7 +39,7 @@ const ApplicationFormPage = () => {
       setInitialData({ source: '' });
       setLoading(false);
     }
-  }, [id, isEdit]);
+  }, [id, isEdit, t]);
 
   const handleSubmit = async (
     data: Partial<Application>
@@ -55,7 +57,7 @@ const ApplicationFormPage = () => {
       }
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to save application');
+      setError(err.message || t('failedToSave'));
     }
   };
 
@@ -86,7 +88,7 @@ const ApplicationFormPage = () => {
                 },
               }}
             >
-              Back
+              {t('back')}
             </Button>
           </Box>
           <Box sx={{ flex: '1 1 auto', textAlign: 'center' }}>
@@ -97,7 +99,7 @@ const ApplicationFormPage = () => {
                 textAlign: 'center',
               }}
             >
-              {isEdit ? 'Edit Application' : 'Create Application'}
+              {isEdit ? t('editApplicationTitle') : t('createApplicationTitle')}
             </Typography>
           </Box>
           <Box sx={{ flex: '0.1 0 auto' }} />

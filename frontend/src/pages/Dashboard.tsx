@@ -1,5 +1,5 @@
 // frontend/src/pages/Dashboard.tsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -35,6 +35,7 @@ import {
 import html2canvas from 'html2canvas';
 import { saveFileWithPicker } from '../utils/fileUtils';
 import { scrollbarSx } from '../styles/scrollbar';
+import { useLanguage } from '../context/LanguageContext';
 
 const statusColors: Record<string, string> = {
   Sent: '#2196f3',
@@ -48,13 +49,74 @@ const statusColors: Record<string, string> = {
 
 const CHART_COLORS = ['#2196f3', '#6FD1E2', '#A37BE0', '#ffc107', '#4caf50', '#f44336', '#9e9e9e'];
 
+// Custom tooltip for funnel chart – text color matches segment color
+const CustomFunnelTooltip = ({ active, payload }: any) => {
+  const { t } = useLanguage();
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const stage = data.stage;
+    const originalStage = data.originalStage;
+    const count = data.count;
+    const color = originalStage && statusColors[originalStage]
+      ? statusColors[originalStage]
+      : CHART_COLORS[0];
+    return (
+      <Box
+        sx={{
+          backgroundColor: '#fff',
+          padding: '8px 12px',
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        }}
+      >
+        <Typography sx={{ color: color, fontWeight: 'bold' }}>
+          {stage}
+        </Typography>
+        <Typography sx={{ color: color }}>
+          {t('count')}: {count}
+        </Typography>
+      </Box>
+    );
+  }
+  return null;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const dashboardRef = useRef<HTMLDivElement>(null);
+
+  // Translate status names for charts, but keep original name for colors
+  const translatedStatusDistribution = useMemo(() => {
+    if (!stats) return [];
+    return stats.statusDistribution.map(item => ({
+      ...item,
+      name: t('statuses.' + item.name),
+      originalName: item.name, // preserve original status for color mapping
+    }));
+  }, [stats, t]);
+
+  const translatedFunnel = useMemo(() => {
+    if (!stats) return [];
+    return stats.funnel.map(item => ({
+      ...item,
+      stage: t('statuses.' + item.stage),
+      originalStage: item.stage, // preserve original status for color mapping
+    }));
+  }, [stats, t]);
+
+  // Tooltip formatter to translate "count" / "value" labels
+  const tooltipFormatter = (value: any, name: string) => {
+    if (name === 'count' || name === 'value') {
+      return [value, t('count')];
+    }
+    return [value, name];
+  };
 
   useEffect(() => {
     const loadStats = async () => {
@@ -62,13 +124,13 @@ const Dashboard = () => {
         const data = await getStats();
         setStats(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load statistics');
+        setError(t('failedToLoad'));
       } finally {
         setLoading(false);
       }
     };
     loadStats();
-  }, []);
+  }, [t]);
 
   const handleSaveAsImage = async () => {
     if (!dashboardRef.current) return;
@@ -84,10 +146,10 @@ const Dashboard = () => {
       const suggestedName = `dashboard_${timestamp}.png`;
       const result = await saveFileWithPicker(blob, suggestedName, 'image/png');
       if (result.success) {
-        setSuccessMessage(`Dashboard saved successfully as ${result.fileName || suggestedName}`);
+        setSuccessMessage(t('dashboardSaved', { fileName: result.fileName || suggestedName }));
       }
     } catch (err) {
-      setError('Failed to save image');
+      setError(t('failedToSaveImage'));
     }
   };
 
@@ -105,13 +167,13 @@ const Dashboard = () => {
     return (
       <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography>No data available</Typography>
+          <Typography>{t('noDataAvailable')}</Typography>
         </Container>
       </Box>
     );
   }
 
-  const { statusDistribution, timeline, topSources, funnel, totalApplications, offerCount, offerRate } = stats;
+  const { timeline, topSources, totalApplications, offerCount, offerRate } = stats;
 
   return (
     <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
@@ -122,16 +184,16 @@ const Dashboard = () => {
             onClick={() => navigate('/')}
             sx={{ fontWeight: 'bold' }}
           >
-            BACK
+            {t('back')}
           </Button>
-          <Tooltip title="Save the entire dashboard as a PNG image.">
+          <Tooltip title={t('saveAsImageTooltip')}>
             <Button
               variant="outlined"
               startIcon={<DownloadIcon />}
               onClick={handleSaveAsImage}
               sx={{ fontWeight: 'bold' }}
             >
-              SAVE AS IMAGE
+              {t('saveAsImage')}
             </Button>
           </Tooltip>
         </Box>
@@ -151,15 +213,15 @@ const Dashboard = () => {
               }}
             >
               <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Total Applications</Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>{t('totalApplications')}</Typography>
                 <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{totalApplications}</Typography>
               </Box>
               <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Offers</Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>{t('offers')}</Typography>
                 <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{offerCount}</Typography>
               </Box>
               <Box sx={{ p: 1, px: { xs: 3, md: 5 }, textAlign: 'center' }}>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>Offer Rate</Typography>
+                <Typography sx={{ color: 'text.secondary', fontSize: '0.75rem', mb: 0.2, fontWeight: 500 }}>{t('offerRate')}</Typography>
                 <Typography sx={{ fontSize: '1.6rem', fontWeight: 400, color: '#000', lineHeight: 1.1 }}>{offerRate}%</Typography>
               </Box>
             </Paper>
@@ -167,13 +229,13 @@ const Dashboard = () => {
 
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 1.5, mb: 1.5 }}>
             <Box sx={{ flex: 1, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
-              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Status Distribution</Typography>
-              {statusDistribution.length > 0 ? (
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>{t('statusDistribution')}</Typography>
+              {translatedStatusDistribution.length > 0 ? (
                 <Box sx={{ height: 200 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={statusDistribution}
+                        data={translatedStatusDistribution}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -181,23 +243,26 @@ const Dashboard = () => {
                         outerRadius={70}
                         label
                       >
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={statusColors[entry.name] || CHART_COLORS[index % CHART_COLORS.length]} />
+                        {translatedStatusDistribution.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={statusColors[entry.originalName] || CHART_COLORS[index % CHART_COLORS.length]}
+                          />
                         ))}
                       </Pie>
-                      <RechartsTooltip />
+                      <RechartsTooltip formatter={tooltipFormatter} />
                     </PieChart>
                   </ResponsiveContainer>
                 </Box>
               ) : (
                 <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">No data available</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('noDataAvailable')}</Typography>
                 </Box>
               )}
             </Box>
 
             <Box sx={{ flex: 1.4, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
-              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Applications Over Time (Last 30 Days)</Typography>
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>{t('applicationsOverTime')}</Typography>
               <Box sx={{ height: 200 }}>
                 {timeline.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -205,18 +270,18 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={tooltipFormatter} />
                       <Bar dataKey="count" fill="#82ca9d" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <Typography sx={{ textAlign: 'center', mt: 8 }}>No timeline data</Typography>
+                  <Typography sx={{ textAlign: 'center', mt: 8 }}>{t('noTimelineData')}</Typography>
                 )}
               </Box>
             </Box>
 
             <Box sx={{ flex: 1.1, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 1.5, minWidth: 0 }}>
-              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>Top Sources</Typography>
+              <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 1, fontSize: '0.85rem' }}>{t('topSources')}</Typography>
               <Box sx={{ height: 200 }}>
                 {topSources.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
@@ -224,28 +289,28 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis type="category" dataKey="source" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} formatter={tooltipFormatter} />
                       <Bar dataKey="count" fill="#8884d8" radius={[0, 4, 4, 0]}>
                         <LabelList dataKey="count" position="right" style={{ fontSize: 10 }} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <Typography sx={{ textAlign: 'center', mt: 8 }}>No source data</Typography>
+                  <Typography sx={{ textAlign: 'center', mt: 8 }}>{t('noSourceData')}</Typography>
                 )}
               </Box>
             </Box>
           </Box>
 
           <Box sx={{ mx: { xs: 0, md: '170px' }, backgroundColor: '#f5f7fa', borderRadius: '16px', p: 2 }}>
-            <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 2, fontSize: '0.85rem' }}>Funnel (Applications reaching each stage)</Typography>
+            <Typography sx={{ textAlign: 'center', fontWeight: 600, mb: 2, fontSize: '0.85rem' }}>{t('funnel')}</Typography>
             <Box sx={{ height: 190 }}>
-              {funnel.some(item => item.count > 0) ? (
+              {translatedFunnel.some(item => item.count > 0) ? (
                 <ResponsiveContainer width="100%" height="108%">
                   <FunnelChart margin={{ top: -5, right: 40, left: 20, bottom: 10 }}>
-                    <RechartsTooltip />
+                    <RechartsTooltip content={<CustomFunnelTooltip />} />
                     <Funnel
-                      data={funnel}
+                      data={translatedFunnel}
                       dataKey="count"
                       nameKey="stage"
                       isAnimationActive
@@ -253,18 +318,17 @@ const Dashboard = () => {
                       <LabelList
                         content={(props) => {
                           const { x, y, width, height, index } = props;
-                          // Safely convert values and provide defaults
                           const safeX = Number(x) || 0;
                           const safeY = Number(y) || 0;
                           const safeWidth = Number(width) || 0;
                           const safeHeight = Number(height) || 0;
                           const safeIndex = index ?? 0;
-                          const stageData = funnel[safeIndex];
+                          const stageData = translatedFunnel[safeIndex];
                           if (!stageData) return null;
-                          const stageName = stageData.stage;
+                          const originalStage = stageData.originalStage;
                           const stageCount = stageData.count;
-                          const labelColor = stageName && statusColors[stageName]
-                            ? statusColors[stageName]
+                          const labelColor = originalStage && statusColors[originalStage]
+                            ? statusColors[originalStage]
                             : CHART_COLORS[safeIndex % CHART_COLORS.length];
                           return (
                             <text
@@ -280,14 +344,17 @@ const Dashboard = () => {
                           );
                         }}
                       />
-                      {funnel.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={statusColors[entry.stage] || CHART_COLORS[index % CHART_COLORS.length]} />
+                      {translatedFunnel.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={statusColors[entry.originalStage] || CHART_COLORS[index % CHART_COLORS.length]}
+                        />
                       ))}
                     </Funnel>
                   </FunnelChart>
                 </ResponsiveContainer>
               ) : (
-                <Typography sx={{ textAlign: 'center', mt: 6 }}>No funnel data</Typography>
+                <Typography sx={{ textAlign: 'center', mt: 6 }}>{t('noFunnelData')}</Typography>
               )}
             </Box>
           </Box>

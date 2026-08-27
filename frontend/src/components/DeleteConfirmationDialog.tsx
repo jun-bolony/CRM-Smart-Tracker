@@ -6,6 +6,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DeleteConfirmationDialogProps {
   open: boolean;
@@ -20,18 +21,20 @@ export const DeleteConfirmationDialog = ({
   onConfirm,
   itemName = 'this application',
 }: DeleteConfirmationDialogProps) => {
+  const { t } = useLanguage();
+
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle sx={{ color: 'black' }}>Confirm Deletion</DialogTitle>
+      <DialogTitle sx={{ color: 'black' }}>{t('confirmDeletion')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ color: 'black' }}>
-          Are you sure you want to delete {itemName}? This action cannot be undone.
+          {t('deleteConfirmMessage', { itemName })}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t('cancel')}</Button>
         <Button onClick={onConfirm} color="error" variant="contained">
-          Delete
+          {t('delete')}
         </Button>
       </DialogActions>
     </Dialog>

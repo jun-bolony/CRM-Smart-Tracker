@@ -10,16 +10,21 @@ import {
   Box,
   Link,
   Alert,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +40,20 @@ const LoginPage = () => {
     }
   };
 
+  const handleLanguageClick = (event: React.MouseEvent<HTMLElement>) => {
+    setLangAnchorEl(event.currentTarget);
+  };
+
+  const handleLanguageClose = () => {
+    setLangAnchorEl(null);
+  };
+
+  const handleLanguageSelect = (lang: 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh') => { // added 'zh'
+    setLanguage(lang);
+    handleLanguageClose();
+  };
+
   return (
-    // Background wrapper covering full viewport with complex gradient background
     <Box
       sx={{
         height: '100vh',
@@ -44,17 +61,61 @@ const LoginPage = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // Linear gradient (triple gradient approx): yellow-ish -> green-ish -> blue-ish
         background: 'linear-gradient(135deg, #f9f8c4 0%, #86b6a0 50%, #77a1d3 100%)',
         margin: 0,
         padding: 0,
-        overflow: 'hidden', // Prevent background scrolling
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
+      {/* Language switcher in top-left corner */}
+      <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
+        <Button
+          onClick={handleLanguageClick}
+          sx={{
+            color: '#ffffff',
+            fontWeight: 'bold',
+            fontSize: '0.85rem',
+            minWidth: '36px',
+            height: '36px',
+            p: 0,
+            backgroundColor: 'rgba(0,0,0,0.15)',
+            borderRadius: '4px',
+            '&:hover': { backgroundColor: 'rgba(0,0,0,0.25)' },
+          }}
+        >
+          {language.toUpperCase()}
+        </Button>
+        <Menu
+          anchorEl={langAnchorEl}
+          open={Boolean(langAnchorEl)}
+          onClose={handleLanguageClose}
+        >
+          <MenuItem onClick={() => handleLanguageSelect('en')} selected={language === 'en'}>
+            English
+          </MenuItem>
+          <MenuItem onClick={() => handleLanguageSelect('ru')} selected={language === 'ru'}>
+            Русский
+          </MenuItem>
+          <MenuItem onClick={() => handleLanguageSelect('es')} selected={language === 'es'}>
+            Español
+          </MenuItem>
+          <MenuItem onClick={() => handleLanguageSelect('fr')} selected={language === 'fr'}>
+            Français
+          </MenuItem>
+          <MenuItem onClick={() => handleLanguageSelect('de')} selected={language === 'de'}>
+            Deutsch
+          </MenuItem>
+          <MenuItem onClick={() => handleLanguageSelect('zh')} selected={language === 'zh'}> {/* new */}
+            中文
+          </MenuItem>
+        </Menu>
+      </Box>
+
       <Container maxWidth="sm">
         <Paper sx={{ p: 4, borderRadius: 2 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ color: '#8E8E8E' }}>
-			Sign In
+            {t('signInTitle')}
           </Typography>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -63,17 +124,16 @@ const LoginPage = () => {
           )}
           <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              label="Email"
+              label={t('email')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               fullWidth
-              // Rule 3.4: Applying slotProps to shrink label initially, as seen on desired image
               slotProps={{ inputLabel: { shrink: true } }}
             />
             <TextField
-              label="Password"
+              label={t('password')}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -87,15 +147,15 @@ const LoginPage = () => {
               color="primary"
               fullWidth
               disabled={loading}
-              sx={{ py: 1.2, fontWeight: 'bold' }} // Slight visual styling to match image boldness
+              sx={{ py: 1.2, fontWeight: 'bold' }}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? t('signingIn') : t('signIn')}
             </Button>
             <Box sx={{ textAlign: 'center', mt: 1 }}>
               <Typography variant="body2">
-                Don't have an account?{' '}
+                {t('dontHaveAccount')}{' '}
                 <Link component={RouterLink} to="/register">
-                  Sign Up
+                  {t('signUpLink')}
                 </Link>
               </Typography>
             </Box>

@@ -1,5 +1,6 @@
 // frontend/src/components/WakeUpScreen.tsx
 import { Box, Typography, LinearProgress, Paper } from '@mui/material';
+import { useLanguage } from '../context/LanguageContext';
 
 interface WakeUpScreenProps {
   secondsLeft: number;
@@ -7,6 +8,7 @@ interface WakeUpScreenProps {
 }
 
 export const WakeUpScreen = ({ secondsLeft, isWaiting }: WakeUpScreenProps) => {
+  const { t } = useLanguage();
   const progress = isWaiting && secondsLeft > 0 ? ((60 - secondsLeft) / 60) * 100 : 0;
   const isIndeterminate = !isWaiting || secondsLeft === 0;
 
@@ -37,12 +39,12 @@ export const WakeUpScreen = ({ secondsLeft, isWaiting }: WakeUpScreenProps) => {
         }}
       >
         <Typography variant="h5" gutterBottom>
-          Server is waking up... 🚀
+          {t('serverWakingUp')}
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-          This project runs on a free server. It takes about 60 seconds to start.
+          {t('serverWakeUpDescription')}
           <br />
-          Thank you for your patience!
+          {t('thankYouPatience')}
         </Typography>
         <LinearProgress
           variant={isIndeterminate ? 'indeterminate' : 'determinate'}
@@ -51,12 +53,12 @@ export const WakeUpScreen = ({ secondsLeft, isWaiting }: WakeUpScreenProps) => {
         />
         {isWaiting && secondsLeft > 0 && (
           <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-            {secondsLeft} seconds remaining
+            {secondsLeft} {t('secondsRemaining')}
           </Typography>
         )}
         {!isWaiting && (
           <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-            Initializing connection...
+            {t('initializingConnection')}
           </Typography>
         )}
       </Paper>

@@ -33,6 +33,7 @@ import { DeleteConfirmationDialog } from '../components/DeleteConfirmationDialog
 import { saveFileWithPicker } from '../utils/fileUtils';
 import { DragDropImport } from '../components/DragDropImport';
 import { scrollbarSx } from '../styles/scrollbar';
+import { useLanguage } from '../context/LanguageContext';
 
 const statusOptions: ApplicationStatus[] = [
   'Sent',
@@ -139,6 +140,7 @@ const ApplicationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
+  const { t, language } = useLanguage();
 
   const [application, setApplication] = useState<Application | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -160,11 +162,11 @@ const ApplicationDetailPage = () => {
       setApplication(data);
       setSelectedStatus(data.status);
     } catch (err: any) {
-      setError(err.message || 'Failed to load application details');
+      setError(err.message || t('failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     loadApplication();
@@ -180,7 +182,7 @@ const ApplicationDetailPage = () => {
       setApplication(updated);
       setSelectedStatus(updated.status);
     } catch (err: any) {
-      setError(err.message || 'Failed to update status');
+      setError(err.message || t('failedToUpdateStatus'));
     }
   };
 
@@ -193,7 +195,7 @@ const ApplicationDetailPage = () => {
       setApplication(updated);
       setNewNote('');
     } catch (err: any) {
-      setError(err.message || 'Failed to add note');
+      setError(err.message || t('failedToAddNote'));
     }
   };
 
@@ -205,7 +207,7 @@ const ApplicationDetailPage = () => {
       const updated = await updateApplication(application._id!, { notes: updatedNotes });
       setApplication(updated);
     } catch (err: any) {
-      setError(err.message || 'Failed to delete note');
+      setError(err.message || t('failedToDeleteNote'));
     }
   };
 
@@ -227,7 +229,7 @@ const ApplicationDetailPage = () => {
       await deleteApplication(id);
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Failed to delete application');
+      setError(err.message || t('failedToDelete'));
     } finally {
       setDeleteDialogOpen(false);
     }
@@ -237,6 +239,7 @@ const ApplicationDetailPage = () => {
     setDeleteDialogOpen(false);
   };
 
+  // Date formatters
   const formatDate = (date?: Date | string) => {
     if (!date) return '-';
     const d = new Date(date);
@@ -258,6 +261,29 @@ const ApplicationDetailPage = () => {
     });
   };
 
+  // Date only (no time), localized
+  const formatDateOnly = (date?: Date | string) => {
+    if (!date) return '-';
+    const d = new Date(date);
+    const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+    return d.toLocaleDateString(locale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  // Short date with time, localized (for status history)
+  const formatDateShortWithTime = (date?: Date | string) => {
+    if (!date) return '-';
+    const d = new Date(date);
+    const locale = language === 'ru' ? 'ru-RU' : 'en-US';
+    return d.toLocaleString(locale, {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    });
+  };
+
   const handleExport = async () => {
     if (!application) return;
     try {
@@ -266,10 +292,10 @@ const ApplicationDetailPage = () => {
       const suggestedName = `application_${application.company}_${application.position}_${timestamp}.json`;
       const result = await saveFileWithPicker(blob, suggestedName, 'application/json');
       if (result.success) {
-        setSuccessMessage(`Application exported successfully as ${result.fileName || suggestedName}`);
+        setSuccessMessage(t('fileExported', { fileName: result.fileName || suggestedName }));
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to export application');
+      setError(err.message || t('failedToExport'));
     }
   };
 
@@ -282,12 +308,12 @@ const ApplicationDetailPage = () => {
       const updated = await updateApplication(application._id!, data);
       setApplication(updated);
       setSelectedStatus(updated.status);
-      setSuccessMessage('Application imported successfully');
+      setSuccessMessage(t('importSuccessful', { created: 0, updated: 1 }));
       setError(null);
     } catch (err: any) {
-      setError(err.message || 'Failed to import application');
+      setError(err.message || t('failedToImport'));
     }
-  }, [application]);
+  }, [application, t]);
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -319,9 +345,9 @@ const ApplicationDetailPage = () => {
     return (
       <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
         <Container maxWidth="lg" sx={{ py: 4 }}>
-          <Typography variant="h6">Application not found</Typography>
+          <Typography variant="h6">{t('applicationNotFound')}</Typography>
           <Button onClick={handleBack} startIcon={<ArrowBack />}>
-            Back to list
+            {t('backToList')}
           </Button>
         </Container>
       </Box>
@@ -339,7 +365,6 @@ const ApplicationDetailPage = () => {
   return (
     <Box sx={{ ...scrollbarSx, height: '100%', overflowY: 'auto' }}>
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Toolbar with conditionally hidden button text on mobile */}
         <Box sx={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
@@ -353,27 +378,27 @@ const ApplicationDetailPage = () => {
           }
         }}>
           <Button onClick={handleBack} startIcon={<ArrowBack />}>
-            {!isMobile && 'Back to list'}
+            {!isMobile && t('backToList')}
           </Button>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Tooltip title="Edit this application">
+            <Tooltip title={t('editThisApplication')}>
               <Button startIcon={<Edit />} onClick={handleEdit}>
-                {!isMobile && 'Edit'}
+                {!isMobile && t('edit')}
               </Button>
             </Tooltip>
-            <Tooltip title="Delete this application">
+            <Tooltip title={t('deleteThisApplication')}>
               <Button startIcon={<Delete />} onClick={handleDeleteClick} color="error">
-                {!isMobile && 'Delete'}
+                {!isMobile && t('delete')}
               </Button>
             </Tooltip>
-            <Tooltip title="Export this application for backup or sharing.">
+            <Tooltip title={t('exportThisApplicationTooltip')}>
               <Button startIcon={<GetApp />} onClick={handleExport}>
-                {!isMobile && 'Export'}
+                {!isMobile && t('export')}
               </Button>
             </Tooltip>
-            <Tooltip title="Import from JSON to update this application.">
+            <Tooltip title={t('importFromJsonTooltip')}>
               <Button startIcon={<CloudUpload />} onClick={handleImportClick}>
-                {!isMobile && 'Import'}
+                {!isMobile && t('import')}
               </Button>
             </Tooltip>
             <input
@@ -408,16 +433,16 @@ const ApplicationDetailPage = () => {
               }}
             >
               <Chip
-                label={application.status}
+                label={t('statuses.' + application.status)}
                 color={statusColorMap[application.status]}
                 size="medium"
                 sx={{ fontWeight: 'bold', width: 'fit-content' }}
               />
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#555' }}>Next Event</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#555' }}>{t('nextEventLabel')}</Typography>
                 <Box sx={{ backgroundColor: '#fff', px: 2, py: 0.5, borderRadius: 4, border: '1px solid #e0e0e0' }}>
                   <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                    {formatDateShort(application.nextEventDate)}
+                    {formatDateOnly(application.nextEventDate)}
                   </Typography>
                 </Box>
               </Box>
@@ -429,25 +454,25 @@ const ApplicationDetailPage = () => {
               {/* Column 1: Status Change & Date */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0, pr: { md: 2 } }}>
                 <Box sx={{ textAlign: 'center', px: 2 }}>
-                  <Typography variant="h6" gutterBottom>Change Status</Typography>
+                  <Typography variant="h6" gutterBottom>{t('changeStatus')}</Typography>
                   <FormControl fullWidth size="small">
-                    <InputLabel id="status-select-label">Status</InputLabel>
+                    <InputLabel id="status-select-label">{t('statusLabel')}</InputLabel>
                     <Select
                       labelId="status-select-label"
                       value={selectedStatus}
-                      label="Status"
+                      label={t('statusLabel')}
                       onChange={handleStatusChange}
                     >
                       {statusOptions.map((s) => (
-                        <MenuItem key={s} value={s}>{s}</MenuItem>
+                        <MenuItem key={s} value={s}>{t('statuses.' + s)}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
                 </Box>
                 
                 <Box sx={{ textAlign: 'center', px: 3, mt: 9 }}>
-                  <CharacteristicsLabel label="Applied Date" />
-                  <FieldValue value={formatDateShort(application.appliedDate)} />
+                  <CharacteristicsLabel label={t('appliedDateLabel')} />
+                  <FieldValue value={formatDateOnly(application.appliedDate)} />
                 </Box>
               </Box>
 
@@ -455,30 +480,30 @@ const ApplicationDetailPage = () => {
 
               {/* Column 2: Company, Position & Unified Contact Panel */}
               <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, px: { md: 3 } }}>
-                  <InlineField label="Company" value={application.company} />
-                  <InlineField label="Position" value={application.position} />
+                  <InlineField label={t('company')} value={application.company} />
+                  <InlineField label={t('position')} value={application.position} />
 
                   <Box sx={{ mt: 3.3, width: '100%' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>Contact</Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', textAlign: 'center', mb: 1 }}>{t('contact')}</Typography>
                     
                     {/* Unified 2-line Contact block */}
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Name</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{t('contactName')}</Typography>
                           <Box sx={{ flex: 1, backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 1, textAlign: 'center', border: '1px solid #f0f0f0', minHeight: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Typography sx={{ fontSize: '0.85rem', wordBreak: 'break-word', whiteSpace: 'normal' }}>{application.contact?.name || '-'}</Typography>
                           </Box>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Phone</Typography>
+                          <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{t('contactPhone')}</Typography>
                           <Box sx={{ flex: 1, backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 1, textAlign: 'center', border: '1px solid #f0f0f0', minHeight: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Typography sx={{ fontSize: '0.85rem', wordBreak: 'break-word', whiteSpace: 'normal' }}>{application.contact?.phone || '-'}</Typography>
                           </Box>
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Email</Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 'bold' }}>{t('contactEmail')}</Typography>
                         <Box sx={{ flex: 1, backgroundColor: '#f9f9f9', borderRadius: 4, py: 0.5, px: 1, textAlign: 'center', border: '1px solid #f0f0f0', minHeight: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Typography sx={{ fontSize: '0.85rem', wordBreak: 'break-word', whiteSpace: 'normal' }}>{application.contact?.email || '-'}</Typography>
                         </Box>
@@ -491,13 +516,13 @@ const ApplicationDetailPage = () => {
 
               {/* Column 3: Salary, Source, URL */}
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.2, minWidth: 0, pl: { md: 2 } }}>
-                  <CharacteristicsLabel label="Salary" />
+                  <CharacteristicsLabel label={t('salaryLabel')} />
                   <FieldValue value={salaryDisplay} />
 
-                  <CharacteristicsLabel label="Source" />
+                  <CharacteristicsLabel label={t('sourceLabel')} />
                   <FieldValue value={application.source || '-'} />
 
-                  <CharacteristicsLabel label="URL" />
+                  <CharacteristicsLabel label={t('urlLabel')} />
                   <FieldValue value={application.url || '-'} href={application.url} />
               </Box>
             </Box>
@@ -509,11 +534,11 @@ const ApplicationDetailPage = () => {
               
               {/* Notes Half */}
               <Box sx={{ flex: 1, pr: { md: 2 } }}>
-                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Notes</Typography>
+                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>{t('notesLabel')}</Typography>
                 
                 <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                   <TextField
-                    label="Add note"
+                    label={t('addNote')}
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     fullWidth
@@ -527,7 +552,7 @@ const ApplicationDetailPage = () => {
                     }}
                   />
                   <Button variant="contained" onClick={handleAddNote} disabled={!newNote.trim()}>
-                    Add
+                    {t('add')}
                   </Button>
                 </Box>
 
@@ -545,7 +570,7 @@ const ApplicationDetailPage = () => {
                           divider={index < arr.length - 1}
                           sx={{ px: 0, display: 'flex', alignItems: 'flex-start' }}
                           secondaryAction={
-                            <Tooltip title="Delete this note">
+                            <Tooltip title={t('deleteNote')}>
                               <IconButton
                                 edge="end"
                                 size="small"
@@ -559,7 +584,7 @@ const ApplicationDetailPage = () => {
                         >
                           <ListItemText
                             primary={note}
-                            secondary={`Note ${arr.length - index}`}
+                            secondary={`${t('note')} ${arr.length - index}`}
                             sx={{ '& .MuiListItemText-primary': { fontSize: '0.9rem', wordBreak: 'break-word', whiteSpace: 'normal' } }}
                           />
                         </ListItem>
@@ -567,7 +592,7 @@ const ApplicationDetailPage = () => {
                     })}
                   </List>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">No notes yet.</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('noNotesYet')}</Typography>
                 )}
               </Box>
 
@@ -575,7 +600,7 @@ const ApplicationDetailPage = () => {
 
               {/* Status History Half */}
               <Box sx={{ flex: 1, pl: { md: 2 } }}>
-                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>Status History</Typography>
+                <Typography variant="h6" gutterBottom sx={{ textAlign: 'center' }}>{t('statusHistory')}</Typography>
                 {application.statusHistory && application.statusHistory.length > 0 ? (
                   <List dense sx={{ 
                     maxHeight: '350px', 
@@ -588,19 +613,19 @@ const ApplicationDetailPage = () => {
                       .map((item, index, arr) => (
                         <ListItem key={index} divider={index < arr.length - 1} sx={{ px: 0, py: 1.5, alignItems: 'flex-start', flexDirection: 'column' }}>
                           <Chip
-                              label={item.status}
+                              label={t('statuses.' + item.status)}
                               color={statusColorMap[item.status] || 'default'}
                               size="small"
                               sx={{ fontWeight: 'bold', fontSize: '0.75rem', width: 'fit-content', mb: 0.5 }}
                           />
                           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
-                            Changed at: {formatDate(item.changedAt)}
+                            {t('changedAt')}: {formatDateShortWithTime(item.changedAt)}
                           </Typography>
                         </ListItem>
                       ))}
                   </List>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">No status history.</Typography>
+                  <Typography variant="body2" color="text.secondary">{t('noStatusHistory')}</Typography>
                 )}
               </Box>
             </Box>
