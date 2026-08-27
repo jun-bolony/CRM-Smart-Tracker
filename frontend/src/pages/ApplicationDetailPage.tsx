@@ -240,26 +240,7 @@ const ApplicationDetailPage = () => {
   };
 
   // Date formatters
-  const formatDate = (date?: Date | string) => {
-    if (!date) return '-';
-    const d = new Date(date);
-    return d.toLocaleString('en-US', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-  };
-
-  const formatDateShort = (date?: Date | string) => {
-    if (!date) return '-';
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-    });
-  };
+  // FIXED: removed unused formatDate and formatDateShort (they were replaced by formatDateOnly and formatDateShortWithTime)
 
   // Date only (no time), localized
   const formatDateOnly = (date?: Date | string) => {

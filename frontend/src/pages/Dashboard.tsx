@@ -110,12 +110,12 @@ const Dashboard = () => {
     }));
   }, [stats, t]);
 
-  // Tooltip formatter to translate "count" / "value" labels
-  const tooltipFormatter = (value: any, name: string) => {
-    if (name === 'count' || name === 'value') {
-      return [value, t('count')];
-    }
-    return [value, name];
+  // FIXED: tooltipFormatter now accepts 'name' as any to match Recharts Formatter signature
+  const tooltipFormatter = (value: any, name: any) => {
+    const label = (typeof name === 'string' && (name === 'count' || name === 'value'))
+      ? t('count')
+      : name ?? '';
+    return [value, label];
   };
 
   useEffect(() => {

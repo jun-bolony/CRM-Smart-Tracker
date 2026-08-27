@@ -1,8 +1,9 @@
 // frontend/src/context/LanguageContext.tsx
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { translations, TranslationKey } from '../translations';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { translations } from '../translations'; // FIXED: removed unused TranslationKey import
 
-type Language = 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh'; // added 'zh'
+type Language = 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh';
 
 interface LanguageContextType {
   language: Language;
@@ -31,7 +32,7 @@ const getNestedTranslation = (obj: any, path: string): string | undefined => {
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (stored === 'ru' || stored === 'es' || stored === 'fr' || stored === 'de' || stored === 'zh') { // added 'zh'
+    if (stored === 'ru' || stored === 'es' || stored === 'fr' || stored === 'de' || stored === 'zh') {
       return stored;
     }
     return 'en';

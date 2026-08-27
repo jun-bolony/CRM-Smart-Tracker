@@ -11,7 +11,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  IconButton,
+  // FIXED: removed unused IconButton
   Menu,
   MenuItem,
 } from '@mui/material';
@@ -219,7 +219,7 @@ export const GlobalNavBar: FC = () => {
     setLangAnchorEl(null);
   };
 
-  const handleLanguageSelect = (lang: 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh') => { // added 'zh'
+  const handleLanguageSelect = (lang: 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh') => {
     setLanguage(lang);
     handleLanguageClose();
   };
@@ -262,7 +262,7 @@ export const GlobalNavBar: FC = () => {
         <MenuItem onClick={() => handleLanguageSelect('de')} selected={language === 'de'}>
           Deutsch
         </MenuItem>
-        <MenuItem onClick={() => handleLanguageSelect('zh')} selected={language === 'zh'}> {/* new */}
+        <MenuItem onClick={() => handleLanguageSelect('zh')} selected={language === 'zh'}>
           中文
         </MenuItem>
       </Menu>
