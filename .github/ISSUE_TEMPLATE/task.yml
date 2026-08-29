@@ -1,0 +1,50 @@
+name: 📋 Task / Chore
+description: A general task, technical debt, or chore that needs to be done.
+title: "[Task]: "
+labels: ["task"]
+assignees:
+  - jun-bolony
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for general tasks, refactoring, documentation updates, or technical debt.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: What needs to be done?
+      placeholder: Describe the task in detail.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: What conditions must be met for this task to be considered complete?
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any additional information, links, or references.
+      placeholder: Add any other context or screenshots.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/jun-bolony/CRM-Smart-Tracker/blob/main/CODE_OF_CONDUCT.md).
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
