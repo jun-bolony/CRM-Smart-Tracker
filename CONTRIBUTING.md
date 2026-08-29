@@ -24,8 +24,18 @@ This project and everyone participating in it is governed by our [Code of Conduc
 2. **Branch naming**: Use descriptive names, e.g., `feature/add-export-xlsx` or `fix/table-sort-issue`.
 3. **Setting up the development environment**:
    - Clone your fork.
-   - **Backend**: Navigate to `/backend`, run `npm install`. Create a `.env` file with `MONGODB_URI` and `JWT_SECRET`.
-   - **Frontend**: Navigate to `/frontend`, run `npm install`. For local development, **do not** set `VITE_API_URL` (Vite proxy will handle requests).
+   3.1.  **Backend**:
+		- Navigate to `/backend`.
+		- Run `npm install`.
+		- Copy the environment template: `.env.example`
+		- Edit `.env` and fill in your `MONGODB_URI` and `JWT_SECRET`.
+		- (Optional) Set `FRONTEND_URL` to your frontend address (default is `http://localhost:5173` for local dev).
+
+   3.2.  **Frontend**:
+		- Navigate to `/frontend`.
+		- Run `npm install`.
+		- Copy the environment template: `.env.example`
+		- **Leave `VITE_API_URL` empty** for local development (the Vite proxy will handle it).
    - **Run locally**: Start backend (`npm run dev`) and frontend (`npm run dev`) simultaneously.
 4. **Code Style Guidelines (Critical)**:
    - **Frontend (React + TypeScript)**:

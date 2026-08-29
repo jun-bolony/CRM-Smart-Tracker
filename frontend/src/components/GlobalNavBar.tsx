@@ -444,7 +444,7 @@ export const GlobalNavBar: FC = () => {
                   fontSize: '0.55rem',
                 }}
               >
-                0.9.90
+                0.9.99
               </Typography>
             </Box>
 

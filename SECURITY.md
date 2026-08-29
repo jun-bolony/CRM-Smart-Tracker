@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-Only the latest version of the project (currently `v.0.9.95` and above) is supported with security updates.
+Only the latest version of the project (`v.0.9.95` and above) is supported with security updates.
 
 | Version             | Supported          |
 | ------------------- | ------------------ |
-| Latest (> v.0.9.95) | :+:                |
+| Latest (> v.0.9.95) | :white_check_mark: |
 | < v.0.9.0           | :x:                |
 
 ## Reporting a Vulnerability
