@@ -41,6 +41,7 @@
 The project is split into two independent parts: **frontend** (client application) and **backend** (REST API). They communicate via HTTP requests.
 
 ### 2.1. Folder Tree (important nodes)
+```txt
 CRM-Smart-Tracker/ # repository root
 ├── backend/ # server side
 │ ├── .env # environment variables (not in Git)
@@ -115,6 +116,7 @@ CRM-Smart-Tracker/ # repository root
 ├── package.json # dependencies and scripts
 ├── vite.config.ts # Vite configuration
 └── tsconfig.json # TypeScript configuration
+```
 
 ### 2.2. Module Descriptions
 
