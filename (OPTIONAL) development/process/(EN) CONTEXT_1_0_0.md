@@ -1,6 +1,6 @@
 # CONTEXT.md — Project "Smart Task Tracker with Analytics" (CRM-Smart-Tracker)
 
-**Project Version:** v.0.9.99  
+**Project Version:** v.1.0.0  
 **Date:** August 29, 2026  
 **Author:** jun-bolony
 
@@ -173,7 +173,7 @@ CRM-Smart-Tracker/ # repository root
 
 ---
 
-## 3. Current Status (v.0.9.99)
+## 3. Current Status (v.1.0.0)
 
 ✅ **What is already working and configured:**
 
