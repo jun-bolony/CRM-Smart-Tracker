@@ -2,7 +2,7 @@
 
 **Full‑stack job application tracker with analytics, status history, and multi‑language support.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/jun-bolony/CRM-Smart-Tracker/releases)
+[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/jun-bolony/CRM-Smart-Tracker/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-19.2.7-61DAFB?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0.2-3178C6?logo=typescript)](https://www.typescriptlang.org/)
