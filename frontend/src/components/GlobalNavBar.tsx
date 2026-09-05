@@ -348,21 +348,19 @@ export const GlobalNavBar: FC = () => {
                   <Button
                     onClick={handleLogout}
                     sx={{
-                      background: 'linear-gradient(180deg, #00e5ff 0%, #0097a7 100%)',
-                      border: '1px solid #00bcd4',
-                      color: '#ffffff',
-                      fontWeight: 'bold',
-                      borderRadius: '4px',
-                      px: 2,
-                      py: 0.3,
-                      height: '20px',
-                      minWidth: 'unset',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.5)',
-                      '&:hover': {
-                        background: 'linear-gradient(180deg, #18ffff 0%, #00838f 100%)',
+						background: 'linear-gradient(160deg, #ffffff 0%, #D6FFE7 70%)',
+						color: '#000000',
+						fontWeight: 'bold',
+						borderRadius: '4px',
+						px: 2,
+						py: 0.3,
+						height: '20px',
+						minWidth: 'unset',
+						display: 'flex',
+						alignItems: 'center',
+						gap: 0.5,
+						'&:hover': {
+							background: 'linear-gradient(160deg, #9EFFF3 0%, #68FFC2 70%)',
                       },
                     }}
                   >
@@ -376,20 +374,18 @@ export const GlobalNavBar: FC = () => {
                     <Button
                       onClick={() => setDeleteDialogOpen(true)}
                       sx={{
-                        background: 'linear-gradient(180deg, #ff5252 0%, #b71c1c 100%)',
-                        border: '1px solid #d32f2f',
-                        color: '#ffffff',
-                        borderRadius: '4px',
-                        px: 1,
-                        py: 0.3,
-                        height: '20px',
-                        minWidth: 'unset',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3)',
-                        '&:hover': {
-                          background: 'linear-gradient(180deg, #ff1744 0%, #880e4f 100%)',
+							background: 'linear-gradient(160deg, #005BE5 0%, #002B6D 90%)',
+							color: '#ffffff',
+							borderRadius: '4px',
+							px: 1,
+							py: 0.3,
+							height: '20px',
+							minWidth: 'unset',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							'&:hover': {
+								background: 'linear-gradient(180deg, #ff1744 0%, #880e4f 100%)',
                         },
                       }}
                     >
@@ -444,7 +440,7 @@ export const GlobalNavBar: FC = () => {
                   fontSize: '0.55rem',
                 }}
               >
-                1.0.0
+                1.0.1
               </Typography>
             </Box>
 
@@ -456,9 +452,8 @@ export const GlobalNavBar: FC = () => {
               <Button
                 onClick={handleLogout}
                 sx={{
-                  background: 'linear-gradient(180deg, #00e5ff 0%, #0097a7 100%)',
-                  border: '1px solid #00bcd4',
-                  color: '#ffffff',
+                  background: 'linear-gradient(160deg, #ffffff 0%, #D6FFE7 70%)',
+                  color: '#000000',
                   fontWeight: 'bold',
                   borderRadius: '4px',
                   px: 2,
@@ -468,9 +463,8 @@ export const GlobalNavBar: FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 0.5,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.5)',
                   '&:hover': {
-                    background: 'linear-gradient(180deg, #18ffff 0%, #00838f 100%)',
+                    background: 'linear-gradient(160deg, #9EFFF3 0%, #68FFC2 70%)',
                   },
                 }}
               >
@@ -484,8 +478,7 @@ export const GlobalNavBar: FC = () => {
                 <Button
                   onClick={() => setDeleteDialogOpen(true)}
                   sx={{
-                    background: 'linear-gradient(180deg, #ff5252 0%, #b71c1c 100%)',
-                    border: '1px solid #d32f2f',
+                    background: 'linear-gradient(160deg, #005BE5 0%, #002B6D 90%)',
                     color: '#ffffff',
                     borderRadius: '4px',
                     px: 1,
@@ -495,7 +488,6 @@ export const GlobalNavBar: FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3)',
                     '&:hover': {
                       background: 'linear-gradient(180deg, #ff1744 0%, #880e4f 100%)',
                     },
