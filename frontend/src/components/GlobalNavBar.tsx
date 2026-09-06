@@ -348,7 +348,7 @@ export const GlobalNavBar: FC = () => {
                   <Button
                     onClick={handleLogout}
                     sx={{
-						background: 'linear-gradient(160deg, #ffffff 0%, #D6FFE7 70%)',
+						background: 'linear-gradient(160deg, #ffffff 0%, #BFE2FF 70%)',
 						color: '#000000',
 						fontWeight: 'bold',
 						borderRadius: '4px',
@@ -360,7 +360,7 @@ export const GlobalNavBar: FC = () => {
 						alignItems: 'center',
 						gap: 0.5,
 						'&:hover': {
-							background: 'linear-gradient(160deg, #9EFFF3 0%, #68FFC2 70%)',
+							background: 'linear-gradient(160deg, #9EEAFF 0%, #68FFFF 70%)',
                       },
                     }}
                   >
@@ -452,7 +452,7 @@ export const GlobalNavBar: FC = () => {
               <Button
                 onClick={handleLogout}
                 sx={{
-                  background: 'linear-gradient(160deg, #ffffff 0%, #D6FFE7 70%)',
+                  background: 'linear-gradient(160deg, #ffffff 0%, #BFE2FF 70%)',
                   color: '#000000',
                   fontWeight: 'bold',
                   borderRadius: '4px',
@@ -464,7 +464,7 @@ export const GlobalNavBar: FC = () => {
                   alignItems: 'center',
                   gap: 0.5,
                   '&:hover': {
-                    background: 'linear-gradient(160deg, #9EFFF3 0%, #68FFC2 70%)',
+                    background: 'linear-gradient(160deg, #9EEAFF 0%, #68FFFF 70%)',
                   },
                 }}
               >
