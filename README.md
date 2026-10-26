@@ -2,7 +2,7 @@
 
 **Full‑stack job application tracker with analytics, status history, and multi‑language support.**
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/jun-bolony/CRM-Smart-Tracker/releases)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/jun-bolony/CRM-Smart-Tracker/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-19.2.7-61DAFB?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.0.2-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -32,7 +32,7 @@ The app is **fully internationalized** and supports 6 languages: English, Russia
 ---
 
 ## Documentation
-- [Project Context & Architecture](./(OPTIONAL) development/process/(EN) CONTEXT_0_9_99.md)
+- [Project Context & Architecture](./(OPTIONAL) development/process/(EN) CONTEXT_1_0_0.md)
 - [Development Roadmap](./(OPTIONAL) development/process/(EN) ROADMAP.md)
 - [Design Mockups & Icon Sources](./(OPTIONAL) development/visual design/)
 
@@ -156,12 +156,14 @@ CRM-Smart-Tracker/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/  # Reusable UI components
-│   │   ├── pages/       # Lazy‑loaded page components
+│   │   ├── pages/       # Page components (statically imported in App.tsx)
 │   │   ├── context/     # Auth & Language contexts
 │   │   ├── translations/# i18n JSON files (en, ru, es, fr, de, zh)
 │   │   ├── services/    # API client (Axios)
 │   │   ├── types/       # TypeScript interfaces
 │   │   └── ...
+│   ├── index.html       # notranslate meta (protects from translator DOM mutations)
+│   ├── vercel.json      # SPA rewrites + cache headers (index.html no-cache, /assets immutable)
 │   └── .env.example
 └── README.md
 ```
@@ -177,6 +179,13 @@ Use the backend/ folder as root, set environment variables in the Render dashboa
 
 **Wake‑up Service:**
 A cron‑job (via Cron‑Job.org) pings the /api/health endpoint every 5 minutes to keep the free‑tier backend alive.
+
+**Build reliability (v1.0.2):**
+- All pages are statically imported in `App.tsx` to guarantee a single `createContext()` instance per context module (fixes `useAuth must be used within an AuthProvider` errors under VPN/proxy and stale chunks).
+- `vite.config.ts` pins a single React copy via `resolve.alias` + `dedupe` and pre-bundles the core runtime via `optimizeDeps.include`.
+- `frontend/vercel.json` configures cache headers: `index.html` is never cached; hashed assets are cached immutably for one year — preventing stale-chunk errors after new deploys.
+- `frontend/src/main.tsx` patches `Node.prototype.removeChild` to tolerate DOM mutations by browser extensions, translators, and VPN proxies.
+- `frontend/index.html` carries `<meta name="google" content="notranslate" />` to prevent Google Translate from mutating the React-managed DOM.
 
 ## 🤝 Contributing
 We welcome contributions! Please read our Contributing Guide before submitting issues or pull requests.
